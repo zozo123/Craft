@@ -1,4 +1,4 @@
-name: rust-core
+name: rust-e2e
 
 # End-to-end parity gate for the Rust rewrite:
 #   1. build the C oracle from the original sources
@@ -71,10 +71,12 @@ jobs:
         working-directory: rust
         run: cargo run -p craft-client -- --smoke
 
-      - name: net e2e (server + net-smoke + live net-play)
+      - name: net e2e (server + net-smoke + live net-play + 2-client online_e2e)
         working-directory: rust
         run: |
           set -euo pipefail
+          cargo test -p craft-client --test online_e2e -- --nocapture
+          cargo test -p craft-server --test e2e_net -- --nocapture
           DB=$(mktemp /tmp/craftXXXX.db)
           cargo build -q -p craft-server -p craft-client
           CRAFT_DB="$DB" ./target/debug/craft-server 127.0.0.1:14080 &
@@ -86,3 +88,65 @@ jobs:
           done
           ./target/debug/craft --net-smoke 127.0.0.1:14080
           ./target/debug/craft --net-play 127.0.0.1:14080
+
+  # Headless end-to-end demo: render the *networked* Rust game to frames with a
+  # software Vulkan device (Mesa lavapipe, no display), encode an mp4 + gif and
+  # upload them as build artifacts. This is a full-stack e2e: server + protocol
+  # + db + core mesher/AO + wgpu renderer, all in Rust.
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/**/Cargo.toml') }}
+
+      - name: Install software Vulkan (lavapipe) + ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mesa-vulkan-drivers libvulkan1 vulkan-tools ffmpeg
+
+      - name: Record networked demo (headless, software GPU)
+        working-directory: rust
+        env:
+          WGPU_BACKEND: vulkan
+        run: |
+          set -euo pipefail
+          export VK_ICD_FILENAMES="$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -1)"
+          vulkaninfo --summary 2>/dev/null | grep -iE 'deviceName|driverName' | head -4 || true
+          cargo build -q -p craft-server -p craft-client
+          DB=$(mktemp /tmp/craftXXXX.db)
+          CRAFT_DB="$DB" ./target/debug/craft-server 127.0.0.1:14082 &
+          SPID=$!
+          trap 'kill $SPID 2>/dev/null || true; rm -f "$DB"' EXIT
+          for _ in $(seq 1 50); do
+            if (echo >/dev/tcp/127.0.0.1/14082) >/dev/null 2>&1; then break; fi
+            sleep 0.1
+          done
+          RUST_LOG=info ./target/debug/craft --demo 127.0.0.1:14082 \
+            --frames 150 --out "$GITHUB_WORKSPACE/demo_frames" --size 960x540
+
+      - name: Encode mp4 + gif
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/demo_out"
+          ffmpeg -y -framerate 30 -i "$GITHUB_WORKSPACE/demo_frames/frame_%05d.png" \
+            -c:v libx264 -pix_fmt yuv420p -crf 24 "$GITHUB_WORKSPACE/demo_out/demo.mp4"
+          ffmpeg -y -framerate 30 -i "$GITHUB_WORKSPACE/demo_frames/frame_%05d.png" \
+            -vf "fps=12,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+            "$GITHUB_WORKSPACE/demo_out/demo.gif"
+          ls -la "$GITHUB_WORKSPACE/demo_out"
+
+      - name: Upload demo artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: craft-rust-demo
+          path: demo_out/*
