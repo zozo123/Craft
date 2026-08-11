@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "currency": "USD",
+  "cap": 20.0,
+  "hard_stop": true,
+  "pricing_prior": {
+    "model_class": "sonnet-class-cursor",
+    "note": "Cursor does not expose per-chat billing in this session; entries are estimates. islo job agent tokens measured where available.",
+    "est_usd_per_coding_turn": 0.06
+  },
+  "execution_model": "cursor_writes_rust_islo_runs_gates",
+  "nested_agent_in_jobs": false,
+  "nested_agent_block_reason": "api.cursor.com unreachable from job sandboxes; CURSOR_API_KEY is islo_phantom token",
+  "entries": [
+    {
+      "id": "plan-1",
+      "ts": "2026-08-11T00:00:00Z",
+      "job": "planning",
+      "attempt": 1,
+      "kind": "cursor_plan",
+      "est_usd": 8.0,
+      "agent_tokens": null,
+      "notes": "Full DAG, cost model, distribution, e2e graphs"
+    },
+    {
+      "id": "verify-1",
+      "ts": "2026-08-11T08:45:00Z",
+      "job": "islo-verify",
+      "attempt": 1,
+      "kind": "cursor_agent_probe",
+      "est_usd": 0.05,
+      "agent_tokens": {
+        "in": 50,
+        "out": 10
+      },
+      "notes": "cursor-agent -p --force CURSOROK"
+    },
+    {
+      "id": "oracle-1",
+      "ts": "2026-08-11T09:00:00Z",
+      "job": "oracle-harness",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 1.5,
+      "agent_tokens": null,
+      "notes": "5 dumpers, stubs, Makefile; 113355 golden lines"
+    },
+    {
+      "id": "oracle-job-1",
+      "ts": "2026-08-11T09:21:00Z",
+      "job": "craft-oracle",
+      "attempt": 7,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0
+      },
+      "notes": "snapshot craft-base-v1 ready 238MB; no agent"
+    },
+    {
+      "id": "diag-1",
+      "ts": "2026-08-11T09:14:00Z",
+      "job": "craft-diag",
+      "attempt": 2,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0
+      },
+      "notes": "documented nested-agent auth failure"
+    },
+    {
+      "id": "core-1",
+      "ts": "2026-08-11T11:00:00Z",
+      "job": "craft-core-port",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 2.0,
+      "agent_tokens": null,
+      "notes": "config/item/noise/world started; map/lib/tests pending"
+    },
+    {
+      "id": "craft-core-finish-7",
+      "ts": "2026-08-11T11:20:18Z",
+      "job": "craft-core-finish",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 3.0,
+      "agent_tokens": null,
+      "notes": "map+lib+parity tests (item/noise/world) + map unit + GH Actions e2e; local fmt/clippy/test green"
+    }
+  ],
+  "cumulative_est_usd": 14.55,
+  "remaining_usd": 5.45,
+  "next_allocation": [
+    {
+      "job": "finish-map-lib-unit",
+      "est_usd": 1.5
+    },
+    {
+      "job": "golden-parity-gates",
+      "est_usd": 2.0
+    },
+    {
+      "job": "islo-cargo-test-gate",
+      "est_usd": 0.0
+    },
+    {
+      "job": "contingency",
+      "est_usd": 4.95
+    }
+  ],
+  "stop_if": [
+    "cumulative_est_usd >= 20",
+    "parity_gate_fails_twice",
+    "starting_wgpu_client_under_t1_cap"
+  ]
+}

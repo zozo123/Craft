@@ -1,0 +1,68 @@
+name: rust-core
+
+# End-to-end parity gate for the Rust rewrite:
+#   1. build the C oracle from the original sources
+#   2. dump golden fixtures
+#   3. build the Rust port and assert it reproduces those fixtures
+# Goldens are generated on the same runner that runs the tests, so float
+# results are bit-identical rather than merely within tolerance.
+
+on:
+  push:
+    branches: [rust-rewrite]
+    paths:
+      - "rust/**"
+      - "oracle/**"
+      - "src/**"
+      - "deps/noise/**"
+      - ".github/workflows/rust-core.yml"
+  pull_request:
+    paths:
+      - "rust/**"
+      - "oracle/**"
+      - "src/**"
+      - "deps/noise/**"
+      - ".github/workflows/rust-core.yml"
+  workflow_dispatch: {}
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install C toolchain
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+
+      - name: Build C oracle and generate goldens
+        run: make -C oracle golden GOLDEN="$GITHUB_WORKSPACE/fixtures/golden"
+
+      - name: Show golden checksums
+        run: cat "$GITHUB_WORKSPACE/fixtures/golden/SHA256SUMS"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/**/Cargo.toml') }}
+
+      - name: rustfmt
+        working-directory: rust
+        run: cargo fmt --all --check
+
+      - name: clippy
+        working-directory: rust
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: test (parity against goldens)
+        working-directory: rust
+        env:
+          CRAFT_GOLDEN_DIR: ${{ github.workspace }}/fixtures/golden
+        run: cargo test --all -- --nocapture
