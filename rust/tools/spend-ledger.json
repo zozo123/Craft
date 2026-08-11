@@ -201,10 +201,52 @@
       "est_usd": 0.0,
       "agent_tokens": null,
       "notes": "craft-gate green; baked craft-full-v0 1010MB"
+    },
+    {
+      "id": "wave-G-ao-19",
+      "ts": "2026-08-11T15:50:39Z",
+      "job": "wave-G-ao",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 5.0,
+      "agent_tokens": {
+        "in": 250000,
+        "out": 0,
+        "total": 250000
+      },
+      "notes": "AO occlusion port + neighborhood mesh + ao_sum signals + fanout job"
+    },
+    {
+      "id": "wave-K-online-20",
+      "ts": "2026-08-11T15:50:39Z",
+      "job": "wave-K-online",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 14.0,
+      "agent_tokens": {
+        "in": 700000,
+        "out": 0,
+        "total": 700000
+      },
+      "notes": "OnlineWorld engine, PlayerPosition/Leave, 2-client e2e, --net-play, mp-e2e job"
+    },
+    {
+      "id": "islo-signals-G-K-21",
+      "ts": "2026-08-11T15:50:39Z",
+      "job": "islo-signals-G-K",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "notes": "6 parallel gates: GH CI, mesh-fanout, mp-e2e, 3 sandboxes"
     }
   ],
-  "cumulative_est_usd": 49.05,
-  "remaining_usd": 70.95,
+  "cumulative_est_usd": 68.05,
+  "remaining_usd": 51.95,
   "next_allocation": [
     {
       "wave": "G",
@@ -248,5 +290,5 @@
     "note": "Correct DAG: G AO \u2225 F HUD after E; then live net K+; L multi-sandbox e2e"
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 0
+  "cumulative_tokens": 950000
 }

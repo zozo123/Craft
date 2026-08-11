@@ -72,3 +72,7 @@ exec = [
   echo "MP_E2E_OK"
   """,
 ]
+
+[[run.tasks.steps]]
+name = "bake-full-v1"
+snapshot = { name = "craft-full-v1" }

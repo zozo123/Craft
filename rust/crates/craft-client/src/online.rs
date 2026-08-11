@@ -232,6 +232,13 @@ impl OnlineWorld {
         self.dirty
     }
 
+    /// Returns whether the world changed since the last call and clears the flag.
+    pub fn take_dirty(&mut self) -> bool {
+        let d = self.dirty;
+        self.dirty = false;
+        d
+    }
+
     /// Mesh chunk (p, q) from the received world; clears the dirty flag.
     pub fn mesh(&mut self, p: i32, q: i32) -> (Vec<f32>, MeshStats) {
         self.dirty = false;

@@ -11,7 +11,7 @@ use bytemuck::{Pod, Zeroable};
 use craft_core::config::{CHUNK_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH};
 use craft_core::map::Map;
 use craft_core::matrix::set_matrix_3d;
-use craft_core::mesh::{fill_chunk_map, mesh_chunk};
+use craft_core::mesh::{fill_chunk_map, mesh_chunk, mesh_map};
 use craft_core::physics::{collide_map, get_motion_vector};
 use craft_protocol::Packet;
 use log::{error, info};
@@ -73,6 +73,18 @@ struct Game {
     mouse_captured: bool,
     last: Instant,
     texture_path: PathBuf,
+    online: Option<craft_client::online::OnlineWorld>,
+    last_send: Instant,
+    needs_remesh: bool,
+}
+
+/// Rebuild a fresh Map holding every block currently known in `src`.
+fn resync_map(src: &Map) -> Map {
+    let mut m = Map::new(src.dx, src.dy, src.dz, src.mask);
+    src.for_each(|x, y, z, w| {
+        m.set(x, y, z, w);
+    });
+    m
 }
 
 #[derive(Default)]
@@ -111,11 +123,57 @@ impl Game {
             mouse_captured: false,
             last: Instant::now(),
             texture_path,
+            online: None,
+            last_send: Instant::now(),
+            needs_remesh: false,
         }
     }
 
-    fn rebuild_mesh(device: &wgpu::Device) -> (wgpu::Buffer, u32) {
-        let (floats, stats) = mesh_chunk(0, 0);
+    /// Connect to a server and seed the world from the received chunk.
+    fn new_online(texture_path: PathBuf, addr: &str) -> Self {
+        use craft_client::online::OnlineWorld;
+        use std::time::Duration;
+
+        let mut online = OnlineWorld::connect(addr, "player").expect("connect server");
+        online.request_chunk(0, 0).expect("request chunk");
+        online.pump_until(
+            |w| w.chunks_keyed >= 1 && w.blocks_received > 0,
+            Duration::from_secs(5),
+        );
+        let map = resync_map(&online.map);
+        let mut x = 0.0f32;
+        let mut y = 60.0f32;
+        let mut z = 0.0f32;
+        for _ in 0..300 {
+            y -= 0.2;
+            collide_map(&map, 2, &mut x, &mut y, &mut z);
+        }
+        y += 1.5;
+        online.x = x;
+        online.y = y;
+        online.z = z;
+        Self {
+            window: None,
+            render: None,
+            map,
+            x,
+            y,
+            z,
+            rx: 0.0,
+            ry: 0.0,
+            flying: false,
+            keys: Keys::default(),
+            mouse_captured: false,
+            last: Instant::now(),
+            texture_path,
+            online: Some(online),
+            last_send: Instant::now(),
+            needs_remesh: false,
+        }
+    }
+
+    fn rebuild_mesh(device: &wgpu::Device, map: &Map) -> (wgpu::Buffer, u32) {
+        let (floats, stats) = mesh_map(0, 0, map);
         info!(
             "mesh chunk(0,0): blocks={} faces={} floats={}",
             stats.blocks, stats.faces, stats.floats
@@ -341,7 +399,7 @@ impl Game {
             cache: None,
         });
 
-        let (vertex_buf, vertex_count) = Self::rebuild_mesh(&device);
+        let (vertex_buf, vertex_count) = Self::rebuild_mesh(&device, &self.map);
         self.render = Some(RenderState {
             surface,
             device,
@@ -413,9 +471,64 @@ impl Game {
         let hi = CHUNK_SIZE as f32 - 1.0;
         self.x = self.x.clamp(lo, hi);
         self.z = self.z.clamp(lo, hi);
+
+        // Networked world: pump peers/edits, mirror them locally, push position.
+        if self.online.is_some() {
+            let (px, py, pz, prx, pry) = (self.x, self.y, self.z, self.rx, self.ry);
+            let (peers, changed) = {
+                let online = self.online.as_mut().unwrap();
+                online.pump();
+                (online.players.len(), online.take_dirty())
+            };
+            if changed {
+                let fresh = resync_map(&self.online.as_ref().unwrap().map);
+                self.map = fresh;
+                self.needs_remesh = true;
+            }
+            if self.last_send.elapsed().as_millis() >= 100 {
+                self.last_send = Instant::now();
+                let online = self.online.as_mut().unwrap();
+                online.x = px;
+                online.y = py;
+                online.z = pz;
+                online.rx = prx;
+                online.ry = pry;
+                let _ = online.send_position();
+            }
+            let _ = peers;
+        }
+    }
+
+    /// Break or place against the block under the crosshair (networked).
+    fn interact(&mut self, place: bool) {
+        let Some(online) = self.online.as_mut() else {
+            return;
+        };
+        online.x = self.x;
+        online.y = self.y;
+        online.z = self.z;
+        online.rx = self.rx;
+        online.ry = self.ry;
+        let hit = if place {
+            online.place_block(1)
+        } else {
+            online.break_block()
+        };
+        if let Ok(Some(_)) = hit {
+            self.map = resync_map(&self.online.as_ref().unwrap().map);
+            self.needs_remesh = true;
+        }
     }
 
     fn render_frame(&mut self) {
+        if self.needs_remesh {
+            self.needs_remesh = false;
+            if let Some(r) = self.render.as_mut() {
+                let (buf, count) = Self::rebuild_mesh(&r.device, &self.map);
+                r.vertex_buf = buf;
+                r.vertex_count = count;
+            }
+        }
         let Some(r) = self.render.as_mut() else {
             return;
         };
@@ -563,13 +676,21 @@ impl ApplicationHandler for Game {
             }
             WindowEvent::MouseInput {
                 state: ElementState::Pressed,
-                button: MouseButton::Left,
+                button,
                 ..
             } => {
-                if let Some(w) = &self.window {
-                    let _ = w.set_cursor_grab(CursorGrabMode::Locked);
-                    w.set_cursor_visible(false);
-                    self.mouse_captured = true;
+                if !self.mouse_captured {
+                    if let Some(w) = &self.window {
+                        let _ = w.set_cursor_grab(CursorGrabMode::Locked);
+                        w.set_cursor_visible(false);
+                        self.mouse_captured = true;
+                    }
+                } else if self.online.is_some() {
+                    match button {
+                        MouseButton::Left => self.interact(false),
+                        MouseButton::Right => self.interact(true),
+                        _ => {}
+                    }
                 }
             }
             _ => {}
@@ -756,6 +877,14 @@ fn main() {
         return;
     }
     let event_loop = EventLoop::new().expect("event loop");
-    let mut game = Game::new(find_texture());
+    let mut game = if let Some(i) = args.iter().position(|a| a == "--connect") {
+        let addr = args
+            .get(i + 1)
+            .map(|s| s.as_str())
+            .unwrap_or("127.0.0.1:4080");
+        Game::new_online(find_texture(), addr)
+    } else {
+        Game::new(find_texture())
+    };
     event_loop.run_app(&mut game).expect("run");
 }
