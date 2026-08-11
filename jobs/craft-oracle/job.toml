@@ -1,0 +1,167 @@
+[job]
+name = "craft-oracle"
+version = "0.1.0"
+description = """
+Bakes the craft-base snapshot: toolchain, cloned source, and the golden
+fixtures dumped from the original C. Runs no agent, so it costs nothing in
+model spend and can be re-run freely whenever the oracle changes.
+"""
+
+[run]
+fail_fast = true
+fanout = false
+workdir = "/workspace"
+timeout = 2700
+
+[run.sandbox]
+mode = "provision"
+image = "ghcr.io/islo-labs/islo-runner:latest"
+vcpus = 4
+memory_mb = 8192
+disk_gb = 20
+init = { type = "full" }
+# Required for cursor-agent. CURSOR_API_KEY is an islo_phantom_* token that
+# only resolves to a real credential through the gateway proxy; without a
+# profile the agent fails with "invalid API key".
+gateway_profile = "default"
+
+[run.sandbox.env]
+CARGO_TERM_COLOR = "never"
+DEBIAN_FRONTEND = "noninteractive"
+
+[[run.tasks]]
+name = "bake-oracle"
+
+# Sandbox egress is intermittently flaky (observed: DNS failure on
+# sh.rustup.rs, and api.cursor.com unreachable). Every network step retries
+# so a transient resolver blip does not discard a run.
+
+[[run.tasks.steps]]
+name = "apt-deps"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  retry() {
+    for i in 1 2 3 4 5; do
+      "$@" && return 0
+      echo "attempt $i failed: $*" >&2
+      sleep $((i * 5))
+    done
+    return 1
+  }
+  retry sudo apt-get update -qq
+  retry sudo apt-get install -y -qq build-essential pkg-config libsqlite3-dev sqlite3
+  """,
+]
+
+[[run.tasks.steps]]
+name = "rust-toolchain"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  retry() {
+    for i in 1 2 3 4 5; do
+      "$@" && return 0
+      echo "attempt $i failed: $*" >&2
+      sleep $((i * 5))
+    done
+    return 1
+  }
+  if ! command -v "$HOME/.cargo/bin/cargo" >/dev/null 2>&1; then
+    retry bash -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh"
+    sh /tmp/rustup.sh -y --profile minimal --default-toolchain stable
+  fi
+  export PATH="$HOME/.cargo/bin:$PATH"
+  retry rustup component add rustfmt clippy
+  rustc --version && cargo --version
+  """,
+]
+
+# No agent step here by design. Job sandboxes cannot reach api.cursor.com
+# (curl returns 000) and the islo_phantom_* CURSOR_API_KEY is only swapped for
+# a real credential in interactive sandboxes, so a nested agent cannot
+# authenticate. This job is fully deterministic and costs zero model spend.
+
+[[run.tasks.steps]]
+name = "persist-path"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  grep -q 'cargo/bin' "$HOME/.bashrc" 2>/dev/null \
+    || echo 'export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+  """,
+]
+
+[[run.tasks.steps]]
+name = "clone-source"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  rm -rf /workspace/Craft
+  for i in 1 2 3 4 5; do
+    git clone -q --branch rust-rewrite \
+      https://github.com/zozo123/Craft.git /workspace/Craft && break
+    echo "clone attempt $i failed" >&2
+    sleep $((i * 5))
+  done
+  cd /workspace/Craft && git rev-parse --short HEAD
+  """,
+]
+
+# -C rather than the step `workdir` field, which is not honoured: make ran
+# outside oracle/ and failed with "No rule to make target 'all'".
+
+[[run.tasks.steps]]
+name = "build-oracle"
+exec = ["make", "-C", "/workspace/Craft/oracle", "all"]
+
+[[run.tasks.steps]]
+name = "generate-goldens"
+exec = [
+  "make", "-C", "/workspace/Craft/oracle", "golden",
+  "GOLDEN=/workspace/fixtures/golden",
+]
+
+# Guards against a dumper silently emitting nothing, which would make every
+# downstream parity test vacuously pass.
+[[run.tasks.steps]]
+name = "verify-goldens"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  cd /workspace/fixtures/golden
+  fail=0
+  check() {
+    actual=$(wc -l < "$1" | tr -d ' ')
+    if [ "$actual" -ne "$2" ]; then
+      echo "FAIL $1: expected $2 lines, got $actual"; fail=1
+    else
+      echo "ok   $1 ($actual lines)"
+    fi
+  }
+  check noise.tsv        639
+  check item.tsv         887
+  check matrix.tsv        20
+  check cube.tsv          15
+  check world_0_0.tsv   15486
+  check world_1_0.tsv   14654
+  check world_0_1.tsv   17737
+  check world_-1_-1.tsv 17758
+  check world_3_-7.tsv  24176
+  check world_12_34.tsv 21983
+  # Every world emission must be 4 tab-separated integers.
+  awk -F'\\t' 'NF!=4 {print "FAIL malformed: "FILENAME" line "NR; exit 1}' world_*.tsv
+  test "$fail" -eq 0
+  echo "--- goldens verified ---"
+  cat SHA256SUMS
+  """,
+]
+
+[[run.tasks.steps]]
+name = "bake-snapshot"
+snapshot = { name = "craft-base-v1" }

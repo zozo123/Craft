@@ -1,0 +1,12 @@
+[package]
+name = "craft-core"
+description = "Pure data, noise and world generation ported 1:1 from Craft's C sources"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

@@ -1,0 +1,78 @@
+[job]
+name = "craft-mp-e2e"
+version = "0.1.0"
+description = """
+Product multiplayer e2e on a fresh VM: build, run the online_e2e (2 clients),
+then run a real server + two `craft --net-play` binaries against it.
+Deterministic — no agent tokens.
+"""
+
+[run]
+fail_fast = true
+fanout = false
+workdir = "/workspace"
+timeout = 2400
+teardown_on_complete = true
+
+[run.sandbox]
+mode = "provision"
+image = "ghcr.io/islo-labs/islo-runner:latest"
+vcpus = 4
+memory_mb = 8192
+disk_gb = 20
+init = { type = "full" }
+gateway_profile = "default"
+snapshot_name = "craft-full-v0"
+
+[run.sandbox.env]
+CARGO_TERM_COLOR = "never"
+PATH = "/home/islo/.cargo/bin:/home/islo/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[[run.tasks]]
+name = "mp-e2e"
+
+[[run.tasks.steps]]
+name = "pull-build-test"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  export PATH="$HOME/.cargo/bin:$PATH"
+  cd /workspace/Craft
+  git fetch -q origin rust-rewrite
+  git checkout -q rust-rewrite
+  git reset -q --hard origin/rust-rewrite
+  cd rust
+  cargo test -p craft-client --test online_e2e -- --nocapture
+  cargo test -p craft-server --test e2e_net -- --nocapture
+  """,
+]
+
+[[run.tasks.steps]]
+name = "two-live-clients"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  export PATH="$HOME/.cargo/bin:$PATH"
+  cd /workspace/Craft/rust
+  cargo build -q -p craft-server -p craft-client
+  DB=$(mktemp /tmp/mpXXXX.db)
+  CRAFT_DB="$DB" ./target/debug/craft-server 127.0.0.1:14081 &
+  SPID=$!
+  trap 'kill $SPID 2>/dev/null || true; rm -f "$DB"' EXIT
+  for _ in $(seq 1 50); do
+    if (echo >/dev/tcp/127.0.0.1/14081) >/dev/null 2>&1; then break; fi
+    sleep 0.1
+  done
+  ./target/debug/craft --net-play 127.0.0.1:14081 &
+  P1=$!
+  ./target/debug/craft --net-play 127.0.0.1:14081
+  wait $P1
+  echo "MP_E2E_OK"
+  """,
+]
+
+[[run.tasks.steps]]
+name = "bake-full-v2"
+snapshot = { name = "craft-full-v2" }

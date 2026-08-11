@@ -1,0 +1,12 @@
+[package]
+name = "craft-protocol"
+description = "Craft TCP line protocol (V/A/P/C/B/... packets)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

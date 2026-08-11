@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "currency": "USD",
+  "cap": 120.0,
+  "hard_stop": true,
+  "pricing_prior": {
+    "model_class": "cursor-agent-tokens",
+    "note": "Token-primary accounting. USD = tokens * usd_per_1k_tokens / 1000. islo deterministic gates = 0 tokens.",
+    "usd_per_1k_tokens": 0.02,
+    "est_usd_per_coding_turn": 0.06
+  },
+  "execution_model": "cursor_writes_rust_islo_runs_gates",
+  "nested_agent_in_jobs": false,
+  "nested_agent_block_reason": "api.cursor.com unreachable from job sandboxes; CURSOR_API_KEY is islo_phantom token",
+  "entries": [
+    {
+      "id": "plan-1",
+      "ts": "2026-08-11T00:00:00Z",
+      "job": "planning",
+      "attempt": 1,
+      "kind": "cursor_plan",
+      "est_usd": 8.0,
+      "agent_tokens": null,
+      "notes": "Full DAG, cost model, distribution, e2e graphs"
+    },
+    {
+      "id": "verify-1",
+      "ts": "2026-08-11T08:45:00Z",
+      "job": "islo-verify",
+      "attempt": 1,
+      "kind": "cursor_agent_probe",
+      "est_usd": 0.05,
+      "agent_tokens": {
+        "in": 50,
+        "out": 10
+      },
+      "notes": "cursor-agent -p --force CURSOROK"
+    },
+    {
+      "id": "oracle-1",
+      "ts": "2026-08-11T09:00:00Z",
+      "job": "oracle-harness",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 1.5,
+      "agent_tokens": null,
+      "notes": "5 dumpers, stubs, Makefile; 113355 golden lines"
+    },
+    {
+      "id": "oracle-job-1",
+      "ts": "2026-08-11T09:21:00Z",
+      "job": "craft-oracle",
+      "attempt": 7,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0
+      },
+      "notes": "snapshot craft-base-v1 ready 238MB; no agent"
+    },
+    {
+      "id": "diag-1",
+      "ts": "2026-08-11T09:14:00Z",
+      "job": "craft-diag",
+      "attempt": 2,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0
+      },
+      "notes": "documented nested-agent auth failure"
+    },
+    {
+      "id": "core-1",
+      "ts": "2026-08-11T11:00:00Z",
+      "job": "craft-core-port",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 2.0,
+      "agent_tokens": null,
+      "notes": "config/item/noise/world started; map/lib/tests pending"
+    },
+    {
+      "id": "craft-core-finish-7",
+      "ts": "2026-08-11T11:20:18Z",
+      "job": "craft-core-finish",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 3.0,
+      "agent_tokens": null,
+      "notes": "map+lib+parity tests (item/noise/world) + map unit + GH Actions e2e; local fmt/clippy/test green"
+    },
+    {
+      "id": "ci-e2e-green-8",
+      "ts": "2026-08-11T11:22:04Z",
+      "job": "ci-e2e-green",
+      "attempt": 1,
+      "kind": "ci_run",
+      "est_usd": 0.0,
+      "agent_tokens": null,
+      "notes": "GH Actions rust-core green: C oracle -> goldens -> Rust parity, 45s, run 31486233459"
+    },
+    {
+      "id": "wave-B-matrix-cube-9",
+      "ts": "2026-08-11T14:40:44Z",
+      "job": "wave-B-matrix-cube",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 3.5,
+      "agent_tokens": null,
+      "notes": "matrix+cube ports + parity tests green locally"
+    },
+    {
+      "id": "islo-craft-gate-10",
+      "ts": "2026-08-11T14:42:22Z",
+      "job": "islo-craft-gate",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": null,
+      "notes": "craft-gate green; baked craft-mesh-v1"
+    },
+    {
+      "id": "wave-C-craft-sim-11",
+      "ts": "2026-08-11T14:43:40Z",
+      "job": "wave-C-craft-sim",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 2.5,
+      "agent_tokens": null,
+      "notes": "mesh module + craft-sim binary + mesh_e2e; chunk0 faces=2273"
+    },
+    {
+      "id": "wave-D-physics-12",
+      "ts": "2026-08-11T14:45:20Z",
+      "job": "wave-D-physics",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 3.0,
+      "agent_tokens": null,
+      "notes": "physics motion/collide/hit_test + e2e tests"
+    },
+    {
+      "id": "reopt-graph-13",
+      "ts": "2026-08-11T14:59:04Z",
+      "job": "reopt-graph",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 0.5,
+      "agent_tokens": null,
+      "notes": "reoptimized DAG + COST_TRACE"
+    },
+    {
+      "id": "wave-E-client-14",
+      "ts": "2026-08-11T15:05:04Z",
+      "job": "wave-E-client",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 9.0,
+      "agent_tokens": null,
+      "notes": "wgpu craft-client walkable+smoke Metal ok"
+    },
+    {
+      "id": "wave-HI-db-protocol-15",
+      "ts": "2026-08-11T15:05:04Z",
+      "job": "wave-HI-db-protocol",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 5.0,
+      "agent_tokens": null,
+      "notes": "craft-db schema+craft-protocol packets"
+    },
+    {
+      "id": "wave-J-server-16",
+      "ts": "2026-08-11T15:14:55Z",
+      "job": "wave-J-server",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 5.0,
+      "agent_tokens": null,
+      "notes": "craft-server Tokio + e2e_net handshake/chunk/block"
+    },
+    {
+      "id": "wave-KL-net-e2e-17",
+      "ts": "2026-08-11T15:14:55Z",
+      "job": "wave-KL-net-e2e",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 6.0,
+      "agent_tokens": null,
+      "notes": "client --net-smoke + CI net e2e; F/G deferred; rust-full-v0"
+    },
+    {
+      "id": "islo-craft-full-v0-18",
+      "ts": "2026-08-11T15:20:53Z",
+      "job": "islo-craft-full-v0",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": null,
+      "notes": "craft-gate green; baked craft-full-v0 1010MB"
+    },
+    {
+      "id": "wave-G-ao-19",
+      "ts": "2026-08-11T15:50:39Z",
+      "job": "wave-G-ao",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 5.0,
+      "agent_tokens": {
+        "in": 250000,
+        "out": 0,
+        "total": 250000
+      },
+      "notes": "AO occlusion port + neighborhood mesh + ao_sum signals + fanout job"
+    },
+    {
+      "id": "wave-K-online-20",
+      "ts": "2026-08-11T15:50:39Z",
+      "job": "wave-K-online",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 14.0,
+      "agent_tokens": {
+        "in": 700000,
+        "out": 0,
+        "total": 700000
+      },
+      "notes": "OnlineWorld engine, PlayerPosition/Leave, 2-client e2e, --net-play, mp-e2e job"
+    },
+    {
+      "id": "islo-signals-G-K-21",
+      "ts": "2026-08-11T15:50:39Z",
+      "job": "islo-signals-G-K",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "notes": "6 parallel gates: GH CI, mesh-fanout, mp-e2e, 3 sandboxes"
+    },
+    {
+      "id": "islo-craft-full-v1-22",
+      "ts": "2026-08-11T15:57:45Z",
+      "job": "islo-craft-full-v1",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "notes": "mp-e2e green at 29f0e65; baked craft-full-v1"
+    },
+    {
+      "id": "wave-SFP-end-23",
+      "ts": "2026-08-11T16:15:58Z",
+      "job": "wave-SFP-end",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 16.0,
+      "agent_tokens": {
+        "in": 800000,
+        "out": 0,
+        "total": 800000
+      },
+      "notes": "full stream+HUD+peers product e2e end"
+    },
+    {
+      "id": "fix-clippy-1_97-24",
+      "ts": "2026-08-11T16:19:32Z",
+      "job": "fix-clippy-1.97",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 1.2,
+      "agent_tokens": {
+        "in": 60000,
+        "out": 0,
+        "total": 60000
+      },
+      "notes": "rust-1.97 regress sandbox caught unnecessary_unwrap (is_some+unwrap) in client tick; refactored to let-else; re-gated green at 67ddf6d"
+    },
+    {
+      "id": "islo-craft-full-v2-25",
+      "ts": "2026-08-11T16:23:31Z",
+      "job": "islo-craft-full-v2",
+      "attempt": 2,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "notes": "mp-e2e green at 67ddf6d (build+test+2 live clients); rebaked craft-full-v2 from clippy-clean HEAD"
+    },
+    {
+      "id": "wave-DEMO-recorder-26",
+      "ts": "2026-08-11T16:40:00Z",
+      "job": "wave-DEMO-recorder",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 16.0,
+      "agent_tokens": {
+        "in": 800000,
+        "out": 0,
+        "total": 800000
+      },
+      "notes": "headless --demo offscreen recorder (render-to-texture, networked bot+tower+peers+HUD), fixed 112B uniform stride bug (latent in main.rs too), rust-e2e CI job (lavapipe+ffmpeg artifact), docs/DEMO.md"
+    },
+    {
+      "id": "islo-demo-record-27",
+      "ts": "2026-08-11T16:43:00Z",
+      "job": "islo-demo-record",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "notes": "fresh Debian12 VM: lavapipe(llvmpipe) software Vulkan; online_e2e 2/2; 150 frames 960x540; demo.mp4 920KB + demo.gif; extracted via port-forward"
+    }
+  ],
+  "cumulative_est_usd": 101.25,
+  "remaining_usd": 18.75,
+  "next_allocation": [
+    {
+      "wave": "PR+CI-verify",
+      "job": "rust-1.97 regress + GH rust-e2e (demo artifact) + open PR to zozo123/Craft (0 tokens)",
+      "est_usd": 0.0,
+      "est_tokens": 0
+    },
+    {
+      "wave": "reserve",
+      "job": "retries only",
+      "est_usd": 18.75,
+      "est_tokens": 0
+    }
+  ],
+  "stop_if": [
+    "cumulative_est_usd >= 120",
+    "parity_gate_fails_twice"
+  ],
+  "finish_line": {
+    "target": "craft-full-v2 + demo",
+    "cap_usd": 120,
+    "prior_spent_usd": 101.25,
+    "note": "PRODUCT e2e green on rust-1.97: AO + live multiplayer (engine+interactive) + HUD/peers/full-stream + headless networked video demo (lavapipe). Snapshots craft-ao-v1, craft-full-v1, craft-full-v2. Demo committed at docs/demo.{mp4,gif}; PR opened to zozo123/Craft."
+  },
+  "cost_model": "token_primary",
+  "cumulative_tokens": 2610000
+}

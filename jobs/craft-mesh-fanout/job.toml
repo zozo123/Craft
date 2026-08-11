@@ -1,0 +1,67 @@
+[job]
+name = "craft-mesh-fanout"
+version = "0.1.0"
+description = """
+Mesh a 3x3 chunk grid with AO stats under craft-full-v0.
+Deterministic gate — no agent tokens. (Params inlined; islo multiline {param} broken.)
+"""
+
+[run]
+fail_fast = true
+fanout = false
+workdir = "/workspace"
+timeout = 1800
+teardown_on_complete = true
+
+[run.sandbox]
+mode = "provision"
+image = "ghcr.io/islo-labs/islo-runner:latest"
+vcpus = 4
+memory_mb = 8192
+disk_gb = 20
+init = { type = "full" }
+gateway_profile = "default"
+snapshot_name = "craft-full-v0"
+
+[run.sandbox.env]
+CARGO_TERM_COLOR = "never"
+PATH = "/home/islo/.cargo/bin:/home/islo/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[[run.tasks]]
+name = "mesh-grid"
+
+[[run.tasks.steps]]
+name = "pull-build-mesh-grid"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  export PATH="$HOME/.cargo/bin:$PATH"
+  cd /workspace/Craft
+  git fetch -q origin rust-rewrite
+  git checkout -q rust-rewrite
+  git reset -q --hard origin/rust-rewrite
+  cd rust
+  cargo build -q -p craft-sim
+  cargo test -p craft-core --test mesh_e2e -- --nocapture
+  mkdir -p /workspace/artifacts
+  for p in -1 0 1; do
+    for q in -1 0 1; do
+      OUT=/workspace/artifacts/mesh_${p}_${q}.stats
+      cargo run -q -p craft-sim -- "$p" "$q" "$OUT"
+      python3 -c "
+import sys
+d=dict(l.strip().split('=',1) for l in open(sys.argv[1]) if '=' in l)
+ao=float(d['ao_sum']); faces=int(d['faces'])
+assert faces>0 and ao>0.0, d
+print('OK', sys.argv[1], 'faces', faces, 'ao_sum', ao)
+" "$OUT"
+    done
+  done
+  ls -la /workspace/artifacts/
+  """,
+]
+
+[[run.tasks.steps]]
+name = "bake-ao-snap"
+snapshot = { name = "craft-ao-v1" }

@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/craft-core",
+    "crates/craft-sim",
+    "crates/craft-client",
+    "crates/craft-protocol",
+    "crates/craft-db",
+    "crates/craft-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/zozo123/Craft"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+# The port mirrors C control flow on purpose. Rewriting these into idiomatic
+# Rust risks changing float evaluation order, which parity tests would catch
+# but which is cheaper to simply not introduce.
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+needless_range_loop = "allow"
+
+[profile.test]
+opt-level = 1

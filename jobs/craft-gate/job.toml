@@ -1,0 +1,87 @@
+[job]
+name = "craft-gate"
+version = "0.1.0"
+description = """
+Forkable microVM gate: restore craft-base-v1 (or later snap), pull rust-rewrite,
+regenerate goldens, run fmt/clippy/test. No agent — deterministic only.
+"""
+
+[run]
+fail_fast = true
+fanout = false
+workdir = "/workspace"
+timeout = 2700
+teardown_on_complete = true
+
+[run.sandbox]
+mode = "provision"
+image = "ghcr.io/islo-labs/islo-runner:latest"
+vcpus = 4
+memory_mb = 8192
+disk_gb = 20
+init = { type = "full" }
+gateway_profile = "default"
+snapshot_name = "craft-sim-v1"
+
+[run.sandbox.env]
+CARGO_TERM_COLOR = "never"
+DEBIAN_FRONTEND = "noninteractive"
+PATH = "/home/islo/.cargo/bin:/home/islo/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[[run.tasks]]
+name = "gate"
+
+[[run.tasks.steps]]
+name = "pull-latest"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+  cd /workspace/Craft
+  git fetch -q origin rust-rewrite
+  git checkout -q rust-rewrite
+  git reset -q --hard origin/rust-rewrite
+  git rev-parse --short HEAD
+  rustc --version
+  """,
+]
+
+[[run.tasks.steps]]
+name = "regen-goldens"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  make -C /workspace/Craft/oracle golden GOLDEN=/workspace/fixtures/golden
+  """,
+]
+
+[[run.tasks.steps]]
+name = "fmt-clippy-test"
+exec = [
+  "bash", "-lc",
+  """
+  set -euo pipefail
+  export PATH="$HOME/.cargo/bin:$PATH"
+  export CRAFT_GOLDEN_DIR=/workspace/fixtures/golden
+  cd /workspace/Craft/rust
+  cargo fmt --all --check
+  cargo clippy --all-targets -- -D warnings
+  cargo test --all -- --nocapture
+  cargo run -p craft-sim -- 0 0 /workspace/artifacts/mesh_0_0.stats
+  test -s /workspace/artifacts/mesh_0_0.stats
+  DB=$(mktemp /tmp/craftXXXX.db)
+  cargo build -q -p craft-server -p craft-client
+  CRAFT_DB="$DB" ./target/debug/craft-server 127.0.0.1:14080 &
+  SPID=$!
+  sleep 1
+  ./target/debug/craft --net-smoke 127.0.0.1:14080
+  kill $SPID 2>/dev/null || true
+  rm -f "$DB"
+  """,
+]
+
+[[run.tasks.steps]]
+name = "bake-full-snap"
+snapshot = { name = "craft-full-v0" }

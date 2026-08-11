@@ -1,0 +1,48 @@
+# Islo configuration for the Craft -> Rust rewrite.
+#
+# Every sandbox spawned for this project gets: the C toolchain needed to
+# build the golden-fixture oracle, a stable Rust toolchain, and cursor-agent.
+#
+# Agent note: cursor-agent is the only coding agent usable here.
+# The runner image ships `claude` and `codex`, but no ANTHROPIC_API_KEY is
+# injected and the OpenAI account backing `codex` has no credits. CURSOR_API_KEY
+# is injected, so cursor-agent authenticates without extra setup.
+# Invoke it non-interactively as: cursor-agent -p --force "<prompt>"
+
+sandbox: craft-rust
+
+sources:
+  - url: https://github.com/zozo123/Craft
+
+workdir: Craft
+
+cpu: 4
+memory_mb: 8192
+disk_gb: 20
+
+env:
+  CARGO_TERM_COLOR: "never"
+  # Keeps parity failures readable rather than truncated at the first case.
+  RUST_BACKTRACE: "1"
+
+setup_script: |
+  set -euo pipefail
+
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq build-essential pkg-config libsqlite3-dev sqlite3
+
+  if ! command -v cargo >/dev/null 2>&1; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --profile minimal --default-toolchain stable
+  fi
+  echo 'export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+  export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+  rustup component add rustfmt clippy
+
+  if ! command -v cursor-agent >/dev/null 2>&1; then
+    curl -fsS https://cursor.com/install | bash
+  fi
+
+  rustc --version
+  cargo --version
+  cursor-agent --version || true
