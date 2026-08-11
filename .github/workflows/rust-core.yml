@@ -66,3 +66,7 @@ jobs:
         env:
           CRAFT_GOLDEN_DIR: ${{ github.workspace }}/fixtures/golden
         run: cargo test --all -- --nocapture
+
+      - name: client smoke
+        working-directory: rust
+        run: cargo run -p craft-client -- --smoke
