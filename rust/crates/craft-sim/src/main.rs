@@ -20,7 +20,7 @@ fn main() -> ExitCode {
         let _ = fs::create_dir_all(parent);
     }
     let body = format!(
-        "p={}\nq={}\nblocks={}\nfaces={}\nfloats={}\nminy={}\nmaxy={}\nbytes={}\n",
+        "p={}\nq={}\nblocks={}\nfaces={}\nfloats={}\nminy={}\nmaxy={}\nao_sum={:.6}\nlight_sum={:.6}\nbytes={}\n",
         stats.p,
         stats.q,
         stats.blocks,
@@ -28,6 +28,8 @@ fn main() -> ExitCode {
         stats.floats,
         stats.miny,
         stats.maxy,
+        stats.ao_sum,
+        stats.light_sum,
         data.len() * 4
     );
     if let Err(e) = fs::write(&out, &body) {

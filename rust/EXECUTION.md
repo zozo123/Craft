@@ -1,39 +1,59 @@
-# Craft → Rust — Finish-line graph ($80)
+# Craft → Rust — Correct finish DAG ($120, token-primary)
 
-See [COST_TRACE.md](COST_TRACE.md) for the live dollar board.
+See [COST_TRACE.md](COST_TRACE.md). Cap raised to **$120**. Cost accounting is **token-primary** (USD derived); islo gates are **$0 agent tokens**.
 
+## Correct DAG (factory)
+
+```mermaid
+flowchart TD
+  A[A_oracle_core] --> B[B_matrix_cube]
+  B --> C[C_mesh_sim]
+  C --> D[D_physics]
+  D --> E[E_wgpu_client]
+  D --> H[H_db]
+  D --> I[I_protocol]
+  H --> J[J_server]
+  I --> J
+  E --> G[G_AO_workers]
+  C --> G
+  E --> F[F_HUD_daylight]
+  G --> K[K_live_net_client]
+  F --> K
+  J --> K
+  K --> L[L_full_e2e_fanout]
 ```
-spent $49.05 / $80   remain $30.95
-critical path DONE: walkable client → db∥protocol → server → net e2e
-deferred polish: F HUD, G AO+workers (reserve covers if needed)
-```
 
-## Why this order
+### Why this order (corrected)
 
-| Old | Shipped |
+| Edge | Reason |
 |---|---|
-| Serial everything | Fan-out H∥I after physics |
-| Perfect AO before playable | Walkable flat-lit client first |
-| Nested agents in islo | Cursor write + islo/GH gates |
-| F/G before multiplayer | **Deferred** — hit `rust-full-v0` net e2e under budget |
+| G after E+C | AO needs mesh path + client shader already consuming ao/light |
+| F after E | HUD/daylight are client-only; parallelizable with G |
+| K after F+G+J | Live net needs remesh-with-AO + HUD + server |
+| L last | Multi-sandbox / CI fanout proves the factory, not just a unit |
 
-## Wave board
+### Cleared already
 
-| Wave | Deliverable | Est $ | Status |
-|---|---|---:|---|
-| A–D | core/mesh/physics | 23.55 | DONE |
-| E | wgpu walkable + smoke | 9 | DONE |
-| H∥I | db + protocol | 5 | DONE |
-| J | Tokio server | 5 | DONE |
-| K+L | net-smoke + CI e2e | 6 | DONE |
-| F/G | HUD / AO | — | deferred |
-| reserve | | ≤30.95 | |
+A–E, H∥I, J, bring-up K/L (`rust-full-v0` net-smoke).
 
-## Run loop
+### Remaining (this sprint)
+
+| Wave | Gate | Sandboxes |
+|---|---|---|
+| **G** | AO mesh stats + ao_sum≠0 | mesh-fanout job ∥ `islo use --snapshot` |
+| **F** | client smoke + daylight uniform | craft-gate |
+| **K+** | live `--connect` remesh/build | multi-client sandboxes |
+| **L** | GH + islo `craft-full-v1` | fanout grid + 2-client net |
+
+## Run loop (every wave)
 
 ```bash
 cd rust && cargo fmt && cargo clippy --all-targets -- -D warnings && cargo test --all
+# sandbox signal (deterministic, $0 tokens)
+islo use --snapshot craft-full-v0 craft-g-ao -- bash -lc '...'
+# or job
+islo job deploy --path jobs/craft-mesh-fanout/job.toml && islo job run craft-mesh-fanout --watch
 git push origin rust-rewrite
-islo job deploy --path jobs/craft-gate/job.toml && islo job run craft-gate --watch
+python3 rust/tools/append_spend.py --job WAVE --kind cursor_write --tokens N --notes "..."
 python3 rust/tools/cost_report.py
 ```
