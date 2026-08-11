@@ -26,6 +26,8 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window, WindowId};
 
+mod demo;
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Vertex {
@@ -43,7 +45,9 @@ struct Uniforms {
     camera: [f32; 3],
     fog_distance: f32,
     daylight: f32,
-    _pad: [f32; 3],
+    // WGSL rounds the struct (trailing vec3 `_pad`) up to a 112-byte stride;
+    // match it exactly so the bound uniform size satisfies the shader.
+    _pad: [f32; 7],
 }
 
 struct RenderState {
@@ -724,7 +728,7 @@ impl Game {
             camera: [self.x, self.y, self.z],
             fog_distance: (10 * 32 + 64) as f32,
             daylight: self.daylight,
-            _pad: [0.0; 3],
+            _pad: [0.0; 7],
         };
         r.queue
             .write_buffer(&r.uniform_buf, 0, bytemuck::bytes_of(&u));
@@ -1041,6 +1045,41 @@ fn main() {
             .map(|s| s.as_str())
             .unwrap_or("127.0.0.1:4080");
         net_play(addr);
+        return;
+    }
+    if let Some(i) = args.iter().position(|a| a == "--demo") {
+        let addr = args
+            .get(i + 1)
+            .map(|s| s.as_str())
+            .unwrap_or("127.0.0.1:4080");
+        let flag = |name: &str, def: &str| -> String {
+            args.iter()
+                .position(|a| a == name)
+                .and_then(|j| args.get(j + 1))
+                .cloned()
+                .unwrap_or_else(|| def.to_string())
+        };
+        let out = flag("--out", "demo_frames");
+        let frames: u32 = flag("--frames", "180").parse().unwrap_or(180);
+        let size = flag("--size", "1280x720");
+        let (w, h) = size
+            .split_once('x')
+            .and_then(|(a, b)| Some((a.parse().ok()?, b.parse().ok()?)))
+            .unwrap_or((1280u32, 720u32));
+        match demo::run(
+            &find_texture(),
+            addr,
+            std::path::Path::new(&out),
+            frames,
+            w,
+            h,
+        ) {
+            Ok(()) => info!("demo ok"),
+            Err(e) => {
+                error!("demo failed: {e}");
+                std::process::exit(1);
+            }
+        }
         return;
     }
     if args.iter().any(|a| a == "--smoke") {
