@@ -271,21 +271,35 @@
         "total": 800000
       },
       "notes": "full stream+HUD+peers product e2e end"
+    },
+    {
+      "id": "fix-clippy-1_97-24",
+      "ts": "2026-08-11T16:19:32Z",
+      "job": "fix-clippy-1.97",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 1.2,
+      "agent_tokens": {
+        "in": 60000,
+        "out": 0,
+        "total": 60000
+      },
+      "notes": "rust-1.97 regress sandbox caught unnecessary_unwrap (is_some+unwrap) in client tick; refactored to let-else; re-gated green at 67ddf6d"
     }
   ],
-  "cumulative_est_usd": 84.05,
-  "remaining_usd": 35.95,
+  "cumulative_est_usd": 85.25,
+  "remaining_usd": 34.75,
   "next_allocation": [
     {
       "wave": "L2-gates",
-      "job": "islo/GH craft-full-v2 (0 tokens)",
+      "job": "islo/GH craft-full-v2 bake (0 tokens)",
       "est_usd": 0.0,
       "est_tokens": 0
     },
     {
       "wave": "reserve",
       "job": "retries only",
-      "est_usd": 35.95,
+      "est_usd": 34.75,
       "est_tokens": 0
     }
   ],
@@ -294,11 +308,11 @@
     "parity_gate_fails_twice"
   ],
   "finish_line": {
-    "target": "craft-full-v1",
+    "target": "craft-full-v2",
     "cap_usd": 120,
-    "prior_spent_usd": 49.05,
-    "note": "PRODUCT e2e green: AO + live multiplayer (engine+interactive). Snapshots craft-ao-v1, craft-full-v1."
+    "prior_spent_usd": 85.25,
+    "note": "PRODUCT e2e green on rust-1.97 toolchain: AO + live multiplayer (engine+interactive) + HUD/peers/full-stream. Snapshots craft-ao-v1, craft-full-v1, craft-full-v2."
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 1750000
+  "cumulative_tokens": 1810000
 }
