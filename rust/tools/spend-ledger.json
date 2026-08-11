@@ -243,39 +243,29 @@
         "total": 0
       },
       "notes": "6 parallel gates: GH CI, mesh-fanout, mp-e2e, 3 sandboxes"
+    },
+    {
+      "id": "islo-craft-full-v1-22",
+      "ts": "2026-08-11T15:57:45Z",
+      "job": "islo-craft-full-v1",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "notes": "mp-e2e green at 29f0e65; baked craft-full-v1"
     }
   ],
   "cumulative_est_usd": 68.05,
   "remaining_usd": 51.95,
   "next_allocation": [
     {
-      "wave": "G",
-      "job": "ao-mesh",
-      "est_usd": 12.0,
-      "est_tokens": 600000
-    },
-    {
-      "wave": "F",
-      "job": "hud-daylight",
-      "est_usd": 10.0,
-      "est_tokens": 500000
-    },
-    {
-      "wave": "K+",
-      "job": "live-net-client",
-      "est_usd": 18.0,
-      "est_tokens": 900000
-    },
-    {
-      "wave": "L",
-      "job": "multi-sandbox-e2e",
-      "est_usd": 8.0,
-      "est_tokens": 400000
-    },
-    {
       "wave": "reserve",
-      "job": "retries",
-      "est_usd": 22.95,
+      "job": "polish/HUD/render-peers",
+      "est_usd": 51.95,
       "est_tokens": 0
     }
   ],
@@ -287,7 +277,7 @@
     "target": "craft-full-v1",
     "cap_usd": 120,
     "prior_spent_usd": 49.05,
-    "note": "Correct DAG: G AO \u2225 F HUD after E; then live net K+; L multi-sandbox e2e"
+    "note": "PRODUCT e2e green: AO + live multiplayer (engine+interactive). Snapshots craft-ao-v1, craft-full-v1."
   },
   "cost_model": "token_primary",
   "cumulative_tokens": 950000
