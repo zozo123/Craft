@@ -8,8 +8,8 @@ Hard rule: **do not start a new job if projected cumulative spend would exceed t
 | Field | Value |
 |---|---|
 | Cap | **$80 USD** finish-line (`rust-full-v0`) |
-| Spent | **~$18.05** (after Wave B) |
-| Remaining | **~$61.95** |
+| Spent | **~$49.05** (J+K/L shipped; F/G deferred) |
+| Remaining | **~$30.95** |
 | Execution model | Cursor writes Rust; islo forkable microVMs + GitHub Actions run gates |
 | Nested agents in jobs | **Blocked** — use snapshots/gates only |
 

@@ -1,53 +1,52 @@
 # Live cost trace — Craft Rust finish line
 
-**Cap: $80.00** · **Hard stop at cap** · Model: Cursor writes · islo/GH gates only
+**Cap: $80.00** · **Hard stop at cap** · Cursor writes · islo/GH gates
+
+```
+spent $49.05 / $80.00   remain $30.95   (61% used)
+```
 
 | When | Wave | Item | Δ $ | Cumul $ | Remain $ | Gate |
 |---|---|---|---:|---:|---:|---|
-| start | — | prior (plan→physics D) | 23.55 | 23.55 | 56.45 | green |
-| *reopt* | — | graph rewrite (this doc) | 0.50 | 24.05 | 55.95 | — |
-| … | E | wgpu client MVP | ≤10 | ≤34 | ≥46 | pending |
-| … | F | HUD / day cycle | ≤5 | ≤39 | ≥41 | pending |
-| … | G | AO+workers (lite) | ≤6 | ≤45 | ≥35 | pending |
-| … | H∥I | db + protocol | ≤8 | ≤53 | ≥27 | pending |
-| … | J | Tokio server | ≤6 | ≤59 | ≥21 | pending |
-| … | K+L | net + full e2e | ≤8 | ≤67 | ≥13 | pending |
-| … | reserve | retries | ≤13 | ≤80 | ≥0 | — |
-
-Update this table and `tools/spend-ledger.json` after every wave via:
+| prior | A–D | plan→physics | 23.55 | 23.55 | 56.45 | green |
+| reopt | — | DAG + COST_TRACE | 0.50 | 24.05 | 55.95 | docs |
+| | E | wgpu `craft-client` walkable + `--smoke` | 9.00 | 33.05 | 46.95 | Metal smoke OK |
+| | H∥I | `craft-db` + `craft-protocol` | 5.00 | 38.05 | 41.95 | unit tests |
+| **now** | **J** | Tokio `craft-server` + lib | 5.00 | 43.05 | 36.95 | e2e_net |
+| **now** | **K+L** | `--net-smoke` + CI net e2e (`rust-full-v0`) | 6.00 | **49.05** | **30.95** | local net OK |
+| deferred | F | HUD / daylight | — | | | polish later |
+| deferred | G | AO+workers | — | | | polish later |
+| reserve | | | ≤30.95 | ≤80 | | |
 
 ```bash
-python3 rust/tools/append_spend.py --job WAVE --kind cursor_write --usd N --notes "..."
 python3 rust/tools/cost_report.py
+python3 rust/tools/append_spend.py --job WAVE --kind cursor_write --usd N --notes "..."
 ```
 
-## Reoptimized critical path (why)
+## Reoptimized graph (finish line)
 
-Old plan was serial J5→…→J16. New plan **cuts the critical path** and **fans out pure crates**:
+Skipped F/G polish to hit multiplayer e2e under budget.
 
 ```mermaid
-flowchart TB
-  done[DONE_A_to_D_core_mesh_physics]
-  done --> E[E_wgpu_walkable]
-  E --> F[F_HUD]
-  E --> G[G_AO_workers]
-  done --> H[H_sqlite]
-  done --> I[I_protocol]
-  H --> J[J_server]
+flowchart LR
+  done[A_D_done]
+  done --> E[E_client_DONE]
+  done --> H[H_db_DONE]
+  done --> I[I_proto_DONE]
+  H --> J[J_server_DONE]
   I --> J
-  F --> K[K_net_client]
-  G --> K
+  E --> K[K_net_DONE]
   J --> K
-  K --> L[L_full_e2e_rust_full_v0]
+  K --> L[L_full_e2e_DONE]
 ```
 
-**Rules**
-1. Ship **walkable client** before perfect AO (flat mesh already works).
-2. **H ∥ I** on islo (different crates, fork `craft-sim-v1`).
-3. Never nest agents in job VMs.
-4. Every wave: local test → push GH → optional islo snapshot bake → `append_spend`.
-5. If remain < next wave estimate → shrink scope, don't blow cap.
+## How to run
 
-## islo fork chain
-
-`craft-base-v1` → `craft-mesh-v1` → `craft-sim-v1` → *(next)* `craft-client-v1` / `craft-db-v1` / `craft-proto-v1`
+```bash
+cd rust
+cargo run -p craft-client                  # local walkable
+cargo run -p craft-client -- --smoke       # CI GPU/mesh smoke
+CRAFT_DB=/tmp/c.db cargo run -p craft-server -- 127.0.0.1:4080
+cargo run -p craft-client -- --net-smoke 127.0.0.1:4080
+cargo test -p craft-server --test e2e_net
+```

@@ -13,7 +13,11 @@ use craft_core::map::Map;
 use craft_core::matrix::set_matrix_3d;
 use craft_core::mesh::{fill_chunk_map, mesh_chunk};
 use craft_core::physics::{collide_map, get_motion_vector};
+use craft_protocol::Packet;
 use log::{error, info};
+use std::io::{BufRead, BufReader, Write};
+use std::net::TcpStream;
+use std::time::Duration;
 use wgpu::util::DeviceExt;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
@@ -605,10 +609,68 @@ fn find_texture() -> PathBuf {
     PathBuf::from("textures/texture.png")
 }
 
+fn net_smoke(addr: &str) {
+    info!("net-smoke connect {addr}");
+    let mut stream = TcpStream::connect(addr).expect("connect server");
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    stream
+        .set_write_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    let mut reader = BufReader::new(stream.try_clone().unwrap());
+    let mut line = String::new();
+    let mut got_you = false;
+    for _ in 0..32 {
+        line.clear();
+        reader.read_line(&mut line).expect("read welcome");
+        match Packet::parse_line(&line) {
+            Ok(Packet::You(id)) => {
+                info!("net-smoke YOU id={id}");
+                got_you = true;
+                break;
+            }
+            Ok(_) => {}
+            Err(e) => panic!("welcome parse {line:?}: {e}"),
+        }
+    }
+    assert!(got_you, "no YOU packet");
+    write!(
+        stream,
+        "{}",
+        Packet::Version(1).encode()
+            + &Packet::Authenticate {
+                username: "smoke".into(),
+                token: "-".into(),
+            }
+            .encode()
+            + &Packet::Chunk { p: 0, q: 0, key: 0 }.encode()
+    )
+    .unwrap();
+    stream.flush().unwrap();
+    let mut blocks = 0u32;
+    let mut keyed = false;
+    for _ in 0..5000 {
+        line.clear();
+        reader.read_line(&mut line).expect("chunk");
+        match Packet::parse_line(&line).expect("parse") {
+            Packet::BlockChunk { .. } => blocks += 1,
+            Packet::Key(_) => {
+                keyed = true;
+                break;
+            }
+            _ => {}
+        }
+    }
+    assert!(blocks > 0, "net-smoke: no blocks");
+    assert!(keyed, "net-smoke: no K");
+    info!("net-smoke ok: blocks={blocks}");
+}
+
 fn main() {
     env_logger::init();
-    let smoke = std::env::args().any(|a| a == "--smoke");
-    if smoke {
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--smoke") {
         let (_data, stats) = mesh_chunk(0, 0);
         assert!(stats.faces > 0, "smoke: empty mesh");
         // Best-effort adapter probe (no window — CI / headless safe).
@@ -628,6 +690,14 @@ fn main() {
             ),
             None => info!("smoke ok: mesh faces={} (no GPU adapter)", stats.faces),
         }
+        return;
+    }
+    if let Some(i) = args.iter().position(|a| a == "--net-smoke") {
+        let addr = args
+            .get(i + 1)
+            .map(|s| s.as_str())
+            .unwrap_or("127.0.0.1:4080");
+        net_smoke(addr);
         return;
     }
     let event_loop = EventLoop::new().expect("event loop");

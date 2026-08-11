@@ -70,3 +70,18 @@ jobs:
       - name: client smoke
         working-directory: rust
         run: cargo run -p craft-client -- --smoke
+
+      - name: net e2e (server + client net-smoke)
+        working-directory: rust
+        run: |
+          set -euo pipefail
+          DB=$(mktemp /tmp/craftXXXX.db)
+          cargo build -q -p craft-server -p craft-client
+          CRAFT_DB="$DB" ./target/debug/craft-server 127.0.0.1:14080 &
+          SPID=$!
+          trap 'kill $SPID 2>/dev/null || true; rm -f "$DB"' EXIT
+          for _ in $(seq 1 50); do
+            if (echo >/dev/tcp/127.0.0.1/14080) >/dev/null 2>&1; then break; fi
+            sleep 0.1
+          done
+          ./target/debug/craft --net-smoke 127.0.0.1:14080

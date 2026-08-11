@@ -21,7 +21,7 @@ memory_mb = 8192
 disk_gb = 20
 init = { type = "full" }
 gateway_profile = "default"
-snapshot_name = "craft-mesh-v1"
+snapshot_name = "craft-sim-v1"
 
 [run.sandbox.env]
 CARGO_TERM_COLOR = "never"
@@ -71,9 +71,17 @@ exec = [
   cargo test --all -- --nocapture
   cargo run -p craft-sim -- 0 0 /workspace/artifacts/mesh_0_0.stats
   test -s /workspace/artifacts/mesh_0_0.stats
+  DB=$(mktemp /tmp/craftXXXX.db)
+  cargo build -q -p craft-server -p craft-client
+  CRAFT_DB="$DB" ./target/debug/craft-server 127.0.0.1:14080 &
+  SPID=$!
+  sleep 1
+  ./target/debug/craft --net-smoke 127.0.0.1:14080
+  kill $SPID 2>/dev/null || true
+  rm -f "$DB"
   """,
 ]
 
 [[run.tasks.steps]]
-name = "bake-sim-snap"
-snapshot = { name = "craft-sim-v1" }
+name = "bake-full-snap"
+snapshot = { name = "craft-full-v0" }

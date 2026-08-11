@@ -114,10 +114,11 @@ impl Packet {
             Packet::Talk(t) => format!("T,{t}\n"),
             Packet::Nick(n) => format!("N,{n}\n"),
             Packet::You(id) => format!("U,{id}\n"),
+            // C client: E,elapsed,day_length
             Packet::Time {
                 day_length,
                 time_of_day,
-            } => format!("E,{day_length},{time_of_day}\n"),
+            } => format!("E,{time_of_day},{day_length}\n"),
             Packet::Key(k) => format!("K,{k}\n"),
             Packet::Redraw { p, q } => format!("R,{p},{q}\n"),
             Packet::Disconnect => "D\n".into(),
@@ -218,15 +219,25 @@ impl Packet {
             }
             "T" => Ok(Packet::Talk(rest.into())),
             "N" => Ok(Packet::Nick(rest.into())),
-            "U" => Ok(Packet::You(parse_i32(rest)?)),
+            "U" => {
+                // Accept U,id or U,id,x,y,z,rx,ry (C client spawn).
+                let f: Vec<_> = rest.split(',').collect();
+                Ok(Packet::You(parse_i32(f.first().copied().unwrap_or(""))?))
+            }
             "E" => {
+                // C: E,elapsed,day_length — store elapsed in time_of_day.
                 let f: Vec<_> = rest.split(',').collect();
                 Ok(Packet::Time {
-                    day_length: parse_i32(f.first().copied().unwrap_or(""))?,
-                    time_of_day: parse_f32(f.get(1).copied().unwrap_or("0"))?,
+                    time_of_day: parse_f32(f.first().copied().unwrap_or("0"))?,
+                    day_length: parse_i32(f.get(1).copied().unwrap_or("600"))?,
                 })
             }
-            "K" => Ok(Packet::Key(parse_i32(rest)?)),
+            "K" => {
+                // Accept K,key or K,p,q,key (server chunk complete).
+                let f: Vec<_> = rest.split(',').collect();
+                let k = f.last().copied().unwrap_or("0");
+                Ok(Packet::Key(parse_i32(k)?))
+            }
             "R" => {
                 let f: Vec<_> = rest.split(',').collect();
                 Ok(Packet::Redraw {

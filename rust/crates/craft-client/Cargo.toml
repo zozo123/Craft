@@ -12,6 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 craft-core = { path = "../craft-core" }
+craft-protocol = { path = "../craft-protocol" }
 winit = { version = "0.30", default-features = true }
 wgpu = "24"
 pollster = "0.4"
