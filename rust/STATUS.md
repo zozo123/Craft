@@ -7,10 +7,11 @@ Hard rule: **do not start a new job if projected cumulative spend would exceed t
 
 | Field | Value |
 |---|---|
-| Cap | **$20 USD** total for Tranche 1 (deterministic core + parity gates) |
-| Execution model | Cursor writes Rust; islo jobs run build/test only (no nested agents) |
-| Nested agents in jobs | **Blocked** — `api.cursor.com` unreachable from job sandboxes; phantom `CURSOR_API_KEY` |
-| Cost model source | Plan COST MODEL (Sonnet-class prior) + measured islo agent spend |
+| Cap | **$80 USD** finish-line (`rust-full-v0`) |
+| Spent | **~$18.05** (after Wave B) |
+| Remaining | **~$61.95** |
+| Execution model | Cursor writes Rust; islo forkable microVMs + GitHub Actions run gates |
+| Nested agents in jobs | **Blocked** — use snapshots/gates only |
 
 ---
 
