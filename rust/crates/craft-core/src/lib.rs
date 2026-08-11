@@ -9,5 +9,6 @@ pub mod cube;
 pub mod item;
 pub mod map;
 pub mod matrix;
+pub mod mesh;
 pub mod noise;
 pub mod world;

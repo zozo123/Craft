@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "craft-core"
 version = "0.1.0"
+
+[[package]]
+name = "craft-sim"
+version = "0.1.0"
+dependencies = [
+ "craft-core",
+]

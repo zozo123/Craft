@@ -1,0 +1,17 @@
+[package]
+name = "craft-sim"
+description = "Headless deterministic e2e driver for Craft Rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "craft-sim"
+path = "src/main.rs"
+
+[dependencies]
+craft-core = { path = "../craft-core" }
+
+[lints]
+workspace = true

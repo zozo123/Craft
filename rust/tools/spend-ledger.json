@@ -110,10 +110,30 @@
       "est_usd": 3.5,
       "agent_tokens": null,
       "notes": "matrix+cube ports + parity tests green locally"
+    },
+    {
+      "id": "islo-craft-gate-10",
+      "ts": "2026-08-11T14:42:22Z",
+      "job": "islo-craft-gate",
+      "attempt": 1,
+      "kind": "islo_job_deterministic",
+      "est_usd": 0.0,
+      "agent_tokens": null,
+      "notes": "craft-gate green; baked craft-mesh-v1"
+    },
+    {
+      "id": "wave-C-craft-sim-11",
+      "ts": "2026-08-11T14:43:40Z",
+      "job": "wave-C-craft-sim",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 2.5,
+      "agent_tokens": null,
+      "notes": "mesh module + craft-sim binary + mesh_e2e; chunk0 faces=2273"
     }
   ],
-  "cumulative_est_usd": 18.05,
-  "remaining_usd": 61.95,
+  "cumulative_est_usd": 20.55,
+  "remaining_usd": 59.45,
   "next_allocation": [
     {
       "wave": "B",

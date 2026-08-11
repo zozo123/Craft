@@ -21,7 +21,7 @@ memory_mb = 8192
 disk_gb = 20
 init = { type = "full" }
 gateway_profile = "default"
-snapshot_name = "craft-base-v1"
+snapshot_name = "craft-mesh-v1"
 
 [run.sandbox.env]
 CARGO_TERM_COLOR = "never"
@@ -69,9 +69,11 @@ exec = [
   cargo fmt --all --check
   cargo clippy --all-targets -- -D warnings
   cargo test --all -- --nocapture
+  cargo run -p craft-sim -- 0 0 /workspace/artifacts/mesh_0_0.stats
+  test -s /workspace/artifacts/mesh_0_0.stats
   """,
 ]
 
 [[run.tasks.steps]]
-name = "bake-mesh-snap"
-snapshot = { name = "craft-mesh-v1" }
+name = "bake-sim-snap"
+snapshot = { name = "craft-sim-v1" }
