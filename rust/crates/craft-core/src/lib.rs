@@ -5,7 +5,9 @@
 //! `oracle/` directory and the parity tests in `tests/`).
 
 pub mod config;
+pub mod cube;
 pub mod item;
 pub mod map;
+pub mod matrix;
 pub mod noise;
 pub mod world;
