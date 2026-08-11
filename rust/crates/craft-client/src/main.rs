@@ -667,9 +667,64 @@ fn net_smoke(addr: &str) {
     info!("net-smoke ok: blocks={blocks}");
 }
 
+/// Headless live-play session: connect, load a chunk, place+break a block,
+/// send a position, remesh. Proves the shipped binary does real multiplayer.
+fn net_play(addr: &str) {
+    use craft_client::online::OnlineWorld;
+    use std::time::Duration;
+
+    let mut w = OnlineWorld::connect(addr, "player").expect("connect");
+    w.request_chunk(0, 0).expect("request chunk");
+    assert!(
+        w.pump_until(
+            |w| w.chunks_keyed >= 1 && w.blocks_received > 0,
+            Duration::from_secs(5)
+        ),
+        "no chunk received"
+    );
+    info!(
+        "net-play id={} blocks={} keyed={}",
+        w.id, w.blocks_received, w.chunks_keyed
+    );
+
+    let (bx, by, bz) = (4, 82, 4);
+    w.edit_block(bx, by, bz, 1).expect("place");
+    assert!(
+        w.pump_until(|w| w.map.get(bx, by, bz) == 1, Duration::from_secs(3)),
+        "place not applied"
+    );
+    w.edit_block(bx, by, bz, 0).expect("break");
+    assert!(
+        w.pump_until(|w| w.map.get(bx, by, bz) == 0, Duration::from_secs(3)),
+        "break not applied"
+    );
+
+    w.x = 2.0;
+    w.z = 2.0;
+    w.send_position().expect("position");
+
+    let (data, stats) = w.mesh(0, 0);
+    assert_eq!(data.len(), stats.floats);
+    assert!(stats.faces > 0 && stats.ao_sum > 0.0, "empty/AO-less mesh");
+    info!(
+        "net-play ok: faces={} ao_sum={:.1} peers={}",
+        stats.faces,
+        stats.ao_sum,
+        w.players.len()
+    );
+}
+
 fn main() {
     env_logger::init();
     let args: Vec<String> = std::env::args().collect();
+    if let Some(i) = args.iter().position(|a| a == "--net-play") {
+        let addr = args
+            .get(i + 1)
+            .map(|s| s.as_str())
+            .unwrap_or("127.0.0.1:4080");
+        net_play(addr);
+        return;
+    }
     if args.iter().any(|a| a == "--smoke") {
         let (_data, stats) = mesh_chunk(0, 0);
         assert!(stats.faces > 0, "smoke: empty mesh");

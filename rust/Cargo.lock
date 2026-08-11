@@ -390,10 +390,13 @@ dependencies = [
  "bytemuck",
  "craft-core",
  "craft-protocol",
+ "craft-server",
  "env_logger",
  "image",
  "log",
  "pollster",
+ "tempfile",
+ "tokio",
  "wgpu",
  "winit",
 ]

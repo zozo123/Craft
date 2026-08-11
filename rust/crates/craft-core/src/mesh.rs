@@ -113,9 +113,16 @@ fn occlusion(
     }
 }
 
-/// Mesh one chunk with face culling + AO/shade (no torch lights).
+/// Mesh a generated chunk with its 3×3 neighborhood.
 pub fn mesh_chunk(p: i32, q: i32) -> (Vec<f32>, MeshStats) {
     let map = fill_neighborhood_map(p, q);
+    mesh_map(p, q, &map)
+}
+
+/// Mesh chunk `(p, q)` from an externally supplied block map.
+///
+/// This is used by the online client after receiving authoritative blocks.
+pub fn mesh_map(p: i32, q: i32, map: &Map) -> (Vec<f32>, MeshStats) {
     let mut faces = 0u32;
     let mut blocks = 0u32;
     let mut miny = 256i32;
@@ -141,12 +148,12 @@ pub fn mesh_chunk(p: i32, q: i32) -> (Vec<f32>, MeshStats) {
             return;
         }
         blocks += 1;
-        let f1 = !opaque_at(&map, ex - 1, ey, ez);
-        let f2 = !opaque_at(&map, ex + 1, ey, ez);
-        let f3 = !opaque_at(&map, ex, ey + 1, ez);
-        let f4 = !opaque_at(&map, ex, ey - 1, ez) && ey > 0;
-        let f5 = !opaque_at(&map, ex, ey, ez - 1);
-        let f6 = !opaque_at(&map, ex, ey, ez + 1);
+        let f1 = !opaque_at(map, ex - 1, ey, ez);
+        let f2 = !opaque_at(map, ex + 1, ey, ez);
+        let f3 = !opaque_at(map, ex, ey + 1, ez);
+        let f4 = !opaque_at(map, ex, ey - 1, ez) && ey > 0;
+        let f5 = !opaque_at(map, ex, ey, ez - 1);
+        let f6 = !opaque_at(map, ex, ey, ez + 1);
         let mut total = i32::from(f1)
             + i32::from(f2)
             + i32::from(f3)
@@ -181,12 +188,12 @@ pub fn mesh_chunk(p: i32, q: i32) -> (Vec<f32>, MeshStats) {
                     let nx = ex + dx;
                     let ny = ey + dy;
                     let nz = ez + dz;
-                    neighbors[index] = u8::from(opaque_at(&map, nx, ny, nz));
+                    neighbors[index] = u8::from(opaque_at(map, nx, ny, nz));
                     shades[index] = 0.0;
                     let hi = highest.get(&(nx, nz)).copied().unwrap_or(0);
                     if ny <= hi {
                         for oy in 0..8 {
-                            if opaque_at(&map, nx, ny + oy, nz) {
+                            if opaque_at(map, nx, ny + oy, nz) {
                                 shades[index] = 1.0 - oy as f32 * 0.125;
                                 break;
                             }

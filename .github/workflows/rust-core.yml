@@ -71,7 +71,7 @@ jobs:
         working-directory: rust
         run: cargo run -p craft-client -- --smoke
 
-      - name: net e2e (server + client net-smoke)
+      - name: net e2e (server + net-smoke + live net-play)
         working-directory: rust
         run: |
           set -euo pipefail
@@ -85,3 +85,4 @@ jobs:
             sleep 0.1
           done
           ./target/debug/craft --net-smoke 127.0.0.1:14080
+          ./target/debug/craft --net-play 127.0.0.1:14080

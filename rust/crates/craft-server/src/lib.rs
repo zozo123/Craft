@@ -76,9 +76,9 @@ pub async fn handle_client(
                         );
                     }
                     Ok(Packet::Position { x, y, z, rx, ry }) => {
-                        let _ = shared.tx.send(format!(
-                            "P,{id},{x:.2},{y:.2},{z:.2},{rx:.2},{ry:.2}\n"
-                        ));
+                        let _ = shared.tx.send(
+                            Packet::PlayerPosition { id, x, y, z, rx, ry }.encode(),
+                        );
                     }
                     Ok(Packet::Block { x, y, z, w }) => {
                         let p = chunked(x as f32);
@@ -140,7 +140,7 @@ pub async fn handle_client(
             }
         }
     }
-    let _ = shared.tx.send(format!("D,{id}\n"));
+    let _ = shared.tx.send(Packet::PlayerLeave(id).encode());
     info!("client {id} disconnected");
     Ok(())
 }

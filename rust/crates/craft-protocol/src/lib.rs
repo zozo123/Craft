@@ -53,6 +53,17 @@ pub enum Packet {
         q: i32,
     },
     Disconnect,
+    /// Server→client peer position: P,id,x,y,z,rx,ry (6 numeric fields).
+    PlayerPosition {
+        id: i32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rx: f32,
+        ry: f32,
+    },
+    /// Server→client peer disconnect: D,id.
+    PlayerLeave(i32),
     /// Server→client block payload with chunk coords: B,p,q,x,y,z,w
     BlockChunk {
         p: i32,
@@ -122,6 +133,15 @@ impl Packet {
             Packet::Key(k) => format!("K,{k}\n"),
             Packet::Redraw { p, q } => format!("R,{p},{q}\n"),
             Packet::Disconnect => "D\n".into(),
+            Packet::PlayerPosition {
+                id,
+                x,
+                y,
+                z,
+                rx,
+                ry,
+            } => format!("P,{id},{x:.2},{y:.2},{z:.2},{rx:.2},{ry:.2}\n"),
+            Packet::PlayerLeave(id) => format!("D,{id}\n"),
             Packet::BlockChunk { p, q, x, y, z, w } => format!("B,{p},{q},{x},{y},{z},{w}\n"),
             Packet::Unknown(s) => {
                 if s.ends_with('\n') {
@@ -151,19 +171,30 @@ impl Packet {
             }
             "P" => {
                 let f: Vec<_> = rest.split(',').collect();
-                if f.len() < 5 {
-                    return Err(ParseError::BadField {
+                if f.len() >= 6 {
+                    // Server→client peer position includes the id.
+                    Ok(Packet::PlayerPosition {
+                        id: parse_i32(f[0])?,
+                        x: parse_f32(f[1])?,
+                        y: parse_f32(f[2])?,
+                        z: parse_f32(f[3])?,
+                        rx: parse_f32(f[4])?,
+                        ry: parse_f32(f[5])?,
+                    })
+                } else if f.len() == 5 {
+                    Ok(Packet::Position {
+                        x: parse_f32(f[0])?,
+                        y: parse_f32(f[1])?,
+                        z: parse_f32(f[2])?,
+                        rx: parse_f32(f[3])?,
+                        ry: parse_f32(f[4])?,
+                    })
+                } else {
+                    Err(ParseError::BadField {
                         packet: line.into(),
                         field: "P".into(),
-                    });
+                    })
                 }
-                Ok(Packet::Position {
-                    x: parse_f32(f[0])?,
-                    y: parse_f32(f[1])?,
-                    z: parse_f32(f[2])?,
-                    rx: parse_f32(f[3])?,
-                    ry: parse_f32(f[4])?,
-                })
             }
             "C" => {
                 let f: Vec<_> = rest.split(',').collect();
@@ -245,7 +276,15 @@ impl Packet {
                     q: parse_i32(f.get(1).copied().unwrap_or(""))?,
                 })
             }
-            "D" => Ok(Packet::Disconnect),
+            "D" => {
+                if rest.is_empty() {
+                    Ok(Packet::Disconnect)
+                } else {
+                    Ok(Packet::PlayerLeave(parse_i32(
+                        rest.split(',').next().unwrap_or(""),
+                    )?))
+                }
+            }
             _ => Ok(Packet::Unknown(line.into())),
         }
     }
