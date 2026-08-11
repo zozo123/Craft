@@ -56,6 +56,10 @@ struct RenderState {
     uniform_buf: wgpu::Buffer,
     vertex_buf: wgpu::Buffer,
     vertex_count: u32,
+    peer_buf: wgpu::Buffer,
+    peer_count: u32,
+    hud_pipeline: wgpu::RenderPipeline,
+    hud_buf: wgpu::Buffer,
     size: winit::dpi::PhysicalSize<u32>,
 }
 
@@ -76,6 +80,10 @@ struct Game {
     online: Option<craft_client::online::OnlineWorld>,
     last_send: Instant,
     needs_remesh: bool,
+    item_index: usize,
+    daylight: f32,
+    started: Instant,
+    peer_dirty: bool,
 }
 
 /// Rebuild a fresh Map holding every block currently known in `src`.
@@ -126,6 +134,10 @@ impl Game {
             online: None,
             last_send: Instant::now(),
             needs_remesh: false,
+            item_index: 0,
+            daylight: 0.85,
+            started: Instant::now(),
+            peer_dirty: false,
         }
     }
 
@@ -137,8 +149,8 @@ impl Game {
         let mut online = OnlineWorld::connect(addr, "player").expect("connect server");
         online.request_chunk(0, 0).expect("request chunk");
         online.pump_until(
-            |w| w.chunks_keyed >= 1 && w.blocks_received > 0,
-            Duration::from_secs(5),
+            |w| w.chunks_keyed >= 1 && w.blocks_received > 2000,
+            Duration::from_secs(15),
         );
         let map = resync_map(&online.map);
         let mut x = 0.0f32;
@@ -169,15 +181,14 @@ impl Game {
             online: Some(online),
             last_send: Instant::now(),
             needs_remesh: false,
+            item_index: 0,
+            daylight: 0.85,
+            started: Instant::now(),
+            peer_dirty: true,
         }
     }
 
-    fn rebuild_mesh(device: &wgpu::Device, map: &Map) -> (wgpu::Buffer, u32) {
-        let (floats, stats) = mesh_map(0, 0, map);
-        info!(
-            "mesh chunk(0,0): blocks={} faces={} floats={}",
-            stats.blocks, stats.faces, stats.floats
-        );
+    fn floats_to_buffer(device: &wgpu::Device, floats: &[f32], label: &str) -> (wgpu::Buffer, u32) {
         let mut verts = Vec::with_capacity(floats.len() / 10);
         for chunk in floats.chunks_exact(10) {
             verts.push(Vertex {
@@ -189,11 +200,46 @@ impl Game {
             });
         }
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("chunk"),
+            label: Some(label),
             contents: bytemuck::cast_slice(&verts),
             usage: wgpu::BufferUsages::VERTEX,
         });
         (vertex_buf, verts.len() as u32)
+    }
+
+    fn rebuild_mesh(device: &wgpu::Device, map: &Map) -> (wgpu::Buffer, u32) {
+        let (floats, stats) = mesh_map(0, 0, map);
+        info!(
+            "mesh chunk(0,0): blocks={} faces={} floats={}",
+            stats.blocks, stats.faces, stats.floats
+        );
+        Self::floats_to_buffer(device, &floats, "chunk")
+    }
+
+    fn rebuild_peers(
+        device: &wgpu::Device,
+        peers: &std::collections::HashMap<i32, craft_client::online::RemotePlayer>,
+    ) -> (wgpu::Buffer, u32) {
+        use craft_core::cube::make_cube;
+        use craft_core::item::STONE;
+        let mut data = Vec::new();
+        for p in peers.values() {
+            let mut face = vec![0.0f32; 6 * 60];
+            let ao = [[0.0f32; 4]; 6];
+            let light = [[1.0f32; 4]; 6];
+            make_cube(
+                &mut face, &ao, &light, 1, 1, 1, 1, 1, 1, p.x, p.y, p.z, 0.35, STONE,
+            );
+            // 6 faces * 60 floats
+            data.extend_from_slice(&face[..6 * 60]);
+        }
+        if data.is_empty() {
+            // Placeholder empty buffer (wgpu rejects zero-sized sometimes).
+            data.extend_from_slice(&[0.0f32; 10]);
+            let (buf, _) = Self::floats_to_buffer(device, &data, "peers");
+            return (buf, 0);
+        }
+        Self::floats_to_buffer(device, &data, "peers")
     }
 
     fn init_gpu(&mut self, window: Arc<Window>) -> Result<(), String> {
@@ -400,6 +446,80 @@ impl Game {
         });
 
         let (vertex_buf, vertex_count) = Self::rebuild_mesh(&device, &self.map);
+        let empty_peers = std::collections::HashMap::new();
+        let (peer_buf, peer_count) = Self::rebuild_peers(&device, &empty_peers);
+
+        // Crosshair: two thin quads in NDC.
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        struct HudV {
+            pos: [f32; 2],
+        }
+        let t = 0.004f32;
+        let arm = 0.03f32;
+        let hud_verts: [HudV; 12] = [
+            // horizontal
+            HudV { pos: [-arm, -t] },
+            HudV { pos: [arm, -t] },
+            HudV { pos: [arm, t] },
+            HudV { pos: [-arm, -t] },
+            HudV { pos: [arm, t] },
+            HudV { pos: [-arm, t] },
+            // vertical
+            HudV { pos: [-t, -arm] },
+            HudV { pos: [t, -arm] },
+            HudV { pos: [t, arm] },
+            HudV { pos: [-t, -arm] },
+            HudV { pos: [t, arm] },
+            HudV { pos: [-t, arm] },
+        ];
+        let hud_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("hud"),
+            contents: bytemuck::cast_slice(&hud_verts),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let hud_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("hud"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/hud.wgsl").into()),
+        });
+        let hud_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("hud"),
+            bind_group_layouts: &[],
+            push_constant_ranges: &[],
+        });
+        let hud_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("hud"),
+            layout: Some(&hud_layout),
+            vertex: wgpu::VertexState {
+                module: &hud_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<HudV>() as u64,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &wgpu::vertex_attr_array![0 => Float32x2],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &hud_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
         self.render = Some(RenderState {
             surface,
             device,
@@ -410,6 +530,10 @@ impl Game {
             uniform_buf,
             vertex_buf,
             vertex_count,
+            peer_buf,
+            peer_count,
+            hud_pipeline,
+            hud_buf,
             size,
         });
         self.window = Some(window);
@@ -472,19 +596,27 @@ impl Game {
         self.x = self.x.clamp(lo, hi);
         self.z = self.z.clamp(lo, hi);
 
+        // Daylight cycle (~day_length 600s like Craft).
+        let t = self.started.elapsed().as_secs_f32();
+        self.daylight = 0.15 + 0.85 * (0.5 + 0.5 * (t / 600.0 * std::f32::consts::TAU).sin());
+
         // Networked world: pump peers/edits, mirror them locally, push position.
         if self.online.is_some() {
             let (px, py, pz, prx, pry) = (self.x, self.y, self.z, self.rx, self.ry);
-            let (peers, changed) = {
+            let (peer_n, changed) = {
                 let online = self.online.as_mut().unwrap();
+                let before = online.players.len();
                 online.pump();
-                (online.players.len(), online.take_dirty())
+                let after = online.players.len();
+                (after, online.take_dirty() || before != after)
             };
             if changed {
                 let fresh = resync_map(&self.online.as_ref().unwrap().map);
                 self.map = fresh;
                 self.needs_remesh = true;
+                self.peer_dirty = true;
             }
+            let _ = peer_n;
             if self.last_send.elapsed().as_millis() >= 100 {
                 self.last_send = Instant::now();
                 let online = self.online.as_mut().unwrap();
@@ -495,12 +627,12 @@ impl Game {
                 online.ry = pry;
                 let _ = online.send_position();
             }
-            let _ = peers;
         }
     }
 
     /// Break or place against the block under the crosshair (networked).
     fn interact(&mut self, place: bool) {
+        use craft_core::item::ITEMS;
         let Some(online) = self.online.as_mut() else {
             return;
         };
@@ -509,8 +641,9 @@ impl Game {
         online.z = self.z;
         online.rx = self.rx;
         online.ry = self.ry;
+        let w = ITEMS[self.item_index % ITEMS.len()];
         let hit = if place {
-            online.place_block(1)
+            online.place_block(w)
         } else {
             online.break_block()
         };
@@ -527,6 +660,19 @@ impl Game {
                 let (buf, count) = Self::rebuild_mesh(&r.device, &self.map);
                 r.vertex_buf = buf;
                 r.vertex_count = count;
+            }
+        }
+        if self.peer_dirty {
+            self.peer_dirty = false;
+            if let Some(r) = self.render.as_mut() {
+                let peers = self
+                    .online
+                    .as_ref()
+                    .map(|o| o.players.clone())
+                    .unwrap_or_default();
+                let (buf, count) = Self::rebuild_peers(&r.device, &peers);
+                r.peer_buf = buf;
+                r.peer_count = count;
             }
         }
         let Some(r) = self.render.as_mut() else {
@@ -573,7 +719,7 @@ impl Game {
             matrix: m4,
             camera: [self.x, self.y, self.z],
             fog_distance: (10 * 32 + 64) as f32,
-            daylight: 0.85,
+            daylight: self.daylight,
             _pad: [0.0; 3],
         };
         r.queue
@@ -618,9 +764,43 @@ impl Game {
             pass.set_bind_group(0, &r.bind_group, &[]);
             pass.set_vertex_buffer(0, r.vertex_buf.slice(..));
             pass.draw(0..r.vertex_count, 0..1);
+            if r.peer_count > 0 {
+                pass.set_vertex_buffer(0, r.peer_buf.slice(..));
+                pass.draw(0..r.peer_count, 0..1);
+            }
+        }
+        {
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("hud"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                ..Default::default()
+            });
+            pass.set_pipeline(&r.hud_pipeline);
+            pass.set_vertex_buffer(0, r.hud_buf.slice(..));
+            pass.draw(0..12, 0..1);
         }
         r.queue.submit(Some(encoder.finish()));
         frame.present();
+        if let Some(w) = &self.window {
+            use craft_core::item::ITEMS;
+            let w_id = ITEMS[self.item_index % ITEMS.len()];
+            let title = format!(
+                "Craft (Rust)  item[{}]={}  daylight={:.2}  peers={}",
+                self.item_index + 1,
+                w_id,
+                self.daylight,
+                self.online.as_ref().map(|o| o.players.len()).unwrap_or(0)
+            );
+            w.set_title(&title);
+        }
     }
 }
 
@@ -671,6 +851,15 @@ impl ApplicationHandler for Game {
                     KeyCode::Space => self.keys.space = down,
                     KeyCode::ShiftLeft => self.keys.shift = down,
                     KeyCode::Tab if down => self.flying = !self.flying,
+                    KeyCode::Digit1 if down => self.item_index = 0,
+                    KeyCode::Digit2 if down => self.item_index = 1,
+                    KeyCode::Digit3 if down => self.item_index = 2,
+                    KeyCode::Digit4 if down => self.item_index = 3,
+                    KeyCode::Digit5 if down => self.item_index = 4,
+                    KeyCode::Digit6 if down => self.item_index = 5,
+                    KeyCode::Digit7 if down => self.item_index = 6,
+                    KeyCode::Digit8 if down => self.item_index = 7,
+                    KeyCode::Digit9 if down => self.item_index = 8,
                     _ => {}
                 }
             }
@@ -771,7 +960,7 @@ fn net_smoke(addr: &str) {
     stream.flush().unwrap();
     let mut blocks = 0u32;
     let mut keyed = false;
-    for _ in 0..5000 {
+    for _ in 0..100_000 {
         line.clear();
         reader.read_line(&mut line).expect("chunk");
         match Packet::parse_line(&line).expect("parse") {
@@ -783,7 +972,10 @@ fn net_smoke(addr: &str) {
             _ => {}
         }
     }
-    assert!(blocks > 0, "net-smoke: no blocks");
+    assert!(
+        blocks > 2000,
+        "net-smoke: expected full chunk, got {blocks}"
+    );
     assert!(keyed, "net-smoke: no K");
     info!("net-smoke ok: blocks={blocks}");
 }
@@ -798,10 +990,11 @@ fn net_play(addr: &str) {
     w.request_chunk(0, 0).expect("request chunk");
     assert!(
         w.pump_until(
-            |w| w.chunks_keyed >= 1 && w.blocks_received > 0,
-            Duration::from_secs(5)
+            |w| w.chunks_keyed >= 1 && w.blocks_received > 2000,
+            Duration::from_secs(15)
         ),
-        "no chunk received"
+        "no full chunk received (blocks={})",
+        w.blocks_received
     );
     info!(
         "net-play id={} blocks={} keyed={}",

@@ -34,10 +34,10 @@ fn two_clients_share_edits_and_positions() {
     a.request_chunk(0, 0).unwrap();
     assert!(
         a.pump_until(
-            |w| w.chunks_keyed >= 1 && w.blocks_received > 0,
-            Duration::from_secs(5)
+            |w| w.chunks_keyed >= 1 && w.blocks_received > 2000,
+            Duration::from_secs(15)
         ),
-        "A never received chunk 0,0 (blocks={}, keyed={})",
+        "A never received full chunk 0,0 (blocks={}, keyed={})",
         a.blocks_received,
         a.chunks_keyed
     );
@@ -46,10 +46,10 @@ fn two_clients_share_edits_and_positions() {
     b.request_chunk(0, 0).unwrap();
     assert!(
         b.pump_until(
-            |w| w.chunks_keyed >= 1 && w.blocks_received > 0,
-            Duration::from_secs(5)
+            |w| w.chunks_keyed >= 1 && w.blocks_received > 2000,
+            Duration::from_secs(15)
         ),
-        "B never received chunk 0,0"
+        "B never received full chunk 0,0"
     );
 
     assert_ne!(a.id, b.id, "ids must be distinct");

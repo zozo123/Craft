@@ -1,59 +1,43 @@
-# Craft → Rust — Correct finish DAG ($120, token-primary)
+# Craft → Rust — End graph (product e2e v2)
 
-See [COST_TRACE.md](COST_TRACE.md). Cap raised to **$120**. Cost accounting is **token-primary** (USD derived); islo gates are **$0 agent tokens**.
-
-## Correct DAG (factory)
+Cap **$120** token-primary. See [COST_TRACE.md](COST_TRACE.md).
 
 ```mermaid
 flowchart TD
-  A[A_oracle_core] --> B[B_matrix_cube]
-  B --> C[C_mesh_sim]
+  A[A_oracle] --> B[B_matrix_cube]
+  B --> C[C_mesh]
   C --> D[D_physics]
-  D --> E[E_wgpu_client]
+  D --> E[E_client]
   D --> H[H_db]
-  D --> I[I_protocol]
+  D --> I[I_proto]
   H --> J[J_server]
   I --> J
-  E --> G[G_AO_workers]
-  C --> G
+  C --> G[G_AO]
+  E --> G
+  G --> S[S_full_stream]
+  J --> S
   E --> F[F_HUD_daylight]
-  G --> K[K_live_net_client]
+  S --> K[K_connect_peers]
   F --> K
-  J --> K
-  K --> L[L_full_e2e_fanout]
+  K --> L[L_craft_full_v2]
 ```
 
-### Why this order (corrected)
+## Cleared
 
-| Edge | Reason |
+| Node | Gate |
 |---|---|
-| G after E+C | AO needs mesh path + client shader already consuming ao/light |
-| F after E | HUD/daylight are client-only; parallelizable with G |
-| K after F+G+J | Live net needs remesh-with-AO + HUD + server |
-| L last | Multi-sandbox / CI fanout proves the factory, not just a unit |
+| A–L1 | `craft-full-v1` |
+| S full chunk stream | e2e_net / online_e2e / `--net-play` |
+| F HUD + daylight + hotbar 1–9 | interactive `--connect` |
+| P peer markers | drawn in `--connect` |
+| L2 | GH + islo → **`craft-full-v2`** |
 
-### Cleared already
-
-A–E, H∥I, J, bring-up K/L (`rust-full-v0` net-smoke).
-
-### Remaining (this sprint)
-
-| Wave | Gate | Sandboxes |
-|---|---|---|
-| **G** | AO mesh stats + ao_sum≠0 | mesh-fanout job ∥ `islo use --snapshot` |
-| **F** | client smoke + daylight uniform | craft-gate |
-| **K+** | live `--connect` remesh/build | multi-client sandboxes |
-| **L** | GH + islo `craft-full-v1` | fanout grid + 2-client net |
-
-## Run loop (every wave)
+## Run
 
 ```bash
-cd rust && cargo fmt && cargo clippy --all-targets -- -D warnings && cargo test --all
-# sandbox signal (deterministic, $0 tokens)
-islo use --snapshot craft-full-v0 craft-g-ao -- bash -lc '...'
-# or job
-islo job deploy --path jobs/craft-mesh-fanout/job.toml && islo job run craft-mesh-fanout --watch
-git push origin rust-rewrite
-python3 rust/tools/append_spend.py --job WAVE --kind cursor_write --tokens N --notes "..."
-python3 rust/tools/cost_report.py
+cd rust
+cargo run -p craft-server -- 0.0.0.0:4080
+cargo run -p craft-client -- --connect 127.0.0.1:4080
+cargo run -p craft-client -- --net-play 127.0.0.1:4080
+islo job deploy --path jobs/craft-mp-e2e/job.toml && islo job run craft-mp-e2e --watch
 ```

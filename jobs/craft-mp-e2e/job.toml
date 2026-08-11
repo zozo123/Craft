@@ -74,5 +74,5 @@ exec = [
 ]
 
 [[run.tasks.steps]]
-name = "bake-full-v1"
-snapshot = { name = "craft-full-v1" }
+name = "bake-full-v2"
+snapshot = { name = "craft-full-v2" }

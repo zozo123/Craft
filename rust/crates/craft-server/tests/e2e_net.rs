@@ -69,13 +69,17 @@ fn server_handshake_chunk_block_roundtrip() {
 
     let mut saw_block = false;
     let mut saw_key = false;
+    let mut block_count = 0u32;
     let mut line = String::new();
-    for _ in 0..2000 {
+    for _ in 0..100_000 {
         line.clear();
         reader.read_line(&mut line).expect("chunk line");
         let p = Packet::parse_line(&line).expect("parse chunk");
         match p {
-            Packet::BlockChunk { .. } => saw_block = true,
+            Packet::BlockChunk { .. } => {
+                saw_block = true;
+                block_count += 1;
+            }
             Packet::Key(_) => saw_key = true,
             Packet::Unknown(ref s) if s.starts_with('K') => saw_key = true,
             _ => {}
@@ -84,7 +88,11 @@ fn server_handshake_chunk_block_roundtrip() {
             break;
         }
     }
-    assert!(saw_block, "expected BlockChunk samples for chunk 0,0");
+    assert!(saw_block, "expected BlockChunk for chunk 0,0");
+    assert!(
+        block_count > 2000,
+        "expected full chunk stream, got {block_count}"
+    );
     assert!(saw_key, "expected K key after chunk");
 
     write!(
@@ -116,7 +124,7 @@ fn server_handshake_chunk_block_roundtrip() {
     stream2.flush().unwrap();
 
     let mut found = false;
-    for _ in 0..2000 {
+    for _ in 0..100_000 {
         line.clear();
         reader2.read_line(&mut line).expect("line2");
         match Packet::parse_line(&line).unwrap() {

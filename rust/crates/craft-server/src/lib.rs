@@ -98,33 +98,36 @@ pub async fn handle_client(
                             let db = shared.db.lock().await;
                             db.load_blocks(p, q).unwrap_or_default()
                         };
-                        if db_blocks.is_empty() {
-                            let map = fill_chunk_map(p, q);
-                            let mut sample = Vec::new();
-                            map.for_each(|x, y, z, w| {
-                                if w > 0 && y % 4 == 0 {
-                                    sample.push((x, y, z, w));
-                                }
-                            });
-                            for (x, y, z, w) in sample.into_iter().take(800) {
-                                writer
-                                    .write_all(
-                                        Packet::BlockChunk { p, q, x, y, z, w }
-                                            .encode()
-                                            .as_bytes(),
-                                    )
-                                    .await?;
+                        // Full generated chunk, then overlay DB edits (w==0 = remove).
+                        let map = fill_chunk_map(p, q);
+                        let mut blocks = Vec::new();
+                        map.for_each(|x, y, z, w| {
+                            if w > 0 {
+                                blocks.push((x, y, z, w));
                             }
-                        } else {
-                            for (x, y, z, w) in db_blocks {
-                                writer
-                                    .write_all(
-                                        Packet::BlockChunk { p, q, x, y, z, w }
-                                            .encode()
-                                            .as_bytes(),
-                                    )
-                                    .await?;
+                        });
+                        for (x, y, z, w) in &db_blocks {
+                            if *w == 0 {
+                                blocks.retain(|(bx, by, bz, _)| {
+                                    !(*bx == *x && *by == *y && *bz == *z)
+                                });
+                            } else if let Some(slot) = blocks
+                                .iter_mut()
+                                .find(|(bx, by, bz, _)| *bx == *x && *by == *y && *bz == *z)
+                            {
+                                slot.3 = *w;
+                            } else {
+                                blocks.push((*x, *y, *z, *w));
                             }
+                        }
+                        for (x, y, z, w) in blocks {
+                            writer
+                                .write_all(
+                                    Packet::BlockChunk { p, q, x, y, z, w }
+                                        .encode()
+                                        .as_bytes(),
+                                )
+                                .await?;
                         }
                         writer
                             .write_all(format!("K,{p},{q},0\n").as_bytes())
@@ -147,7 +150,7 @@ pub async fn handle_client(
 
 pub async fn serve(listener: TcpListener, db_path: &str) -> anyhow::Result<()> {
     let db = Db::open(db_path).context("open db")?;
-    let (tx, _) = broadcast::channel(256);
+    let (tx, _) = broadcast::channel(16_384);
     let shared = Arc::new(Shared {
         db: Mutex::new(db),
         next_id: AtomicI32::new(1),
