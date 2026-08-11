@@ -601,32 +601,36 @@ impl Game {
         self.daylight = 0.15 + 0.85 * (0.5 + 0.5 * (t / 600.0 * std::f32::consts::TAU).sin());
 
         // Networked world: pump peers/edits, mirror them locally, push position.
-        if self.online.is_some() {
-            let (px, py, pz, prx, pry) = (self.x, self.y, self.z, self.rx, self.ry);
-            let (peer_n, changed) = {
-                let online = self.online.as_mut().unwrap();
-                let before = online.players.len();
-                online.pump();
-                let after = online.players.len();
-                (after, online.take_dirty() || before != after)
-            };
-            if changed {
-                let fresh = resync_map(&self.online.as_ref().unwrap().map);
-                self.map = fresh;
-                self.needs_remesh = true;
-                self.peer_dirty = true;
-            }
-            let _ = peer_n;
-            if self.last_send.elapsed().as_millis() >= 100 {
-                self.last_send = Instant::now();
-                let online = self.online.as_mut().unwrap();
-                online.x = px;
-                online.y = py;
-                online.z = pz;
-                online.rx = prx;
-                online.ry = pry;
-                let _ = online.send_position();
-            }
+        let (px, py, pz, prx, pry) = (self.x, self.y, self.z, self.rx, self.ry);
+        let send_now = self.last_send.elapsed().as_millis() >= 100;
+        let Some(online) = self.online.as_mut() else {
+            return;
+        };
+        let before = online.players.len();
+        online.pump();
+        let after = online.players.len();
+        let changed = online.take_dirty() || before != after;
+        let fresh = if changed {
+            Some(resync_map(&online.map))
+        } else {
+            None
+        };
+        if send_now {
+            online.x = px;
+            online.y = py;
+            online.z = pz;
+            online.rx = prx;
+            online.ry = pry;
+            let _ = online.send_position();
+        }
+        // `online` (&mut self.online) borrow ends here under NLL.
+        if let Some(fresh) = fresh {
+            self.map = fresh;
+            self.needs_remesh = true;
+            self.peer_dirty = true;
+        }
+        if send_now {
+            self.last_send = Instant::now();
         }
     }
 

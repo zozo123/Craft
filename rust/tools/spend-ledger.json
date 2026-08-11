@@ -257,15 +257,35 @@
         "total": 0
       },
       "notes": "mp-e2e green at 29f0e65; baked craft-full-v1"
+    },
+    {
+      "id": "wave-SFP-end-23",
+      "ts": "2026-08-11T16:15:58Z",
+      "job": "wave-SFP-end",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 16.0,
+      "agent_tokens": {
+        "in": 800000,
+        "out": 0,
+        "total": 800000
+      },
+      "notes": "full stream+HUD+peers product e2e end"
     }
   ],
-  "cumulative_est_usd": 68.05,
-  "remaining_usd": 51.95,
+  "cumulative_est_usd": 84.05,
+  "remaining_usd": 35.95,
   "next_allocation": [
     {
+      "wave": "L2-gates",
+      "job": "islo/GH craft-full-v2 (0 tokens)",
+      "est_usd": 0.0,
+      "est_tokens": 0
+    },
+    {
       "wave": "reserve",
-      "job": "polish/HUD/render-peers",
-      "est_usd": 51.95,
+      "job": "retries only",
+      "est_usd": 35.95,
       "est_tokens": 0
     }
   ],
@@ -280,5 +300,5 @@
     "note": "PRODUCT e2e green: AO + live multiplayer (engine+interactive). Snapshots craft-ao-v1, craft-full-v1."
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 950000
+  "cumulative_tokens": 1750000
 }
