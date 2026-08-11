@@ -4,7 +4,7 @@ use craft_core::item::GRASS;
 use craft_core::map::Map;
 use craft_core::mesh::fill_chunk_map;
 use craft_core::physics::{
-    collide_map, get_motion_vector, get_sight_vector, hit_test_map, player_intersects_block,
+    collide_map, get_motion_vector, hit_test_map, player_intersects_block,
 };
 
 #[test]
