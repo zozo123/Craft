@@ -4,8 +4,9 @@
 
 *(full-quality [`demo.mp4`](./demo.mp4) — 960×540, H.264)*
 
-This clip is rendered **headlessly, entirely in Rust**, driving the whole stack
-end to end — no window, no display, no C. It was recorded on a fresh Linux VM
+This clip is rendered **headlessly by the Rust client**, driving the whole stack
+end to end — no window, no display, and no C in the render/runtime path (the C
+oracle is only used offline for parity). It was recorded on a fresh Linux VM
 using a software Vulkan device (Mesa **lavapipe**), the same path CI uses.
 
 ## What you're seeing
@@ -17,7 +18,7 @@ through the server, persisted in SQLite, broadcast back, applied to the
 recorder's world, and re-meshed with ambient occlusion. The white crosshair is
 the HUD.
 
-## The pipeline (all Rust)
+## The pipeline (Rust product path)
 
 ```
 craft-server (Tokio TCP)  ──▶  craft-protocol (line packets)  ──▶  recorder client

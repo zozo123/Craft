@@ -1,0 +1,9 @@
+# Keep GitHub's language stats honest: the Rust workspace under rust/ is the
+# shipped product. The original C client (src/), Python server, GLSL shaders,
+# and the C oracle are retained for reference and golden-parity testing.
+
+# Vendored third-party C libraries — not our code.
+deps/** linguist-vendored
+
+# Generated golden fixtures (when present) are not source.
+fixtures/** linguist-generated
