@@ -20,6 +20,8 @@ flowchart TD
   S --> K[K_connect_peers]
   F --> K
   K --> L[L_craft_full_v2]
+  L --> M[M_demo_lavapipe]
+  M --> N[N_README_price_DAG]
 ```
 
 ## Cleared
@@ -33,6 +35,7 @@ flowchart TD
 | L2 | GH + islo → **`craft-full-v2`** |
 | Demo + CI | `--demo` + lavapipe artifact + PR#1 merged |
 | README finish | Rust-first README + docs demo on `master` |
+| Price + DAG on README | price tag + mermaid flow on `master` |
 
 ## Run
 

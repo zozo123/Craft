@@ -4,6 +4,8 @@ Minecraft-style voxel game, rewritten end to end in **Rust** — `winit` + `wgpu
 
 Fork: [zozo123/Craft](https://github.com/zozo123/Craft) · Upstream: [fogleman/Craft](https://github.com/fogleman/Craft)
 
+**Price tag: $107.25 / $120 spent** · ~2.91M tokens · [$12.75 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
+
 ![Craft (Rust) networked demo](docs/demo.gif)
 
 *Headless e2e demo (software Vulkan / lavapipe): live server + bot peer builds a tower while an orbit camera records the world. Full quality: [`docs/demo.mp4`](docs/demo.mp4). Details: [`docs/DEMO.md`](docs/DEMO.md).*
@@ -93,9 +95,82 @@ Workflow: [`.github/workflows/rust-core.yml`](.github/workflows/rust-core.yml) (
 
 Deterministic `islo` snapshots used during the rewrite: `craft-base-v1` … `craft-full-v2`.
 
-## Cost / execution notes
+## Price tag
 
-Token-primary ledger for the rewrite: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · graph: [`rust/EXECUTION.md`](rust/EXECUTION.md) · live trace: [`rust/COST_TRACE.md`](rust/COST_TRACE.md).
+| | |
+|---|---|
+| **Cap** | **$120.00** |
+| **Spent** | **$107.25** (89%) |
+| **Remaining** | **$12.75** |
+| **Tokens** | ~2.91M (token-primary; `usd_per_1k_tokens = $0.02`) |
+| **Gates** | islo / GH Actions deterministic runs = **$0** agent tokens |
+
+Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · trace: [`rust/COST_TRACE.md`](rust/COST_TRACE.md).
+
+| Wave | $ |
+|---|---|
+| Planning + DAG + cost model | 8.00 |
+| Oracle harness (C goldens) | 1.50 |
+| Core port + finish (world/noise/map + parity) | 5.00 |
+| Matrix + cube | 3.50 |
+| Mesh + craft-sim | 2.50 |
+| Physics | 3.00 |
+| DAG reopt | 0.50 |
+| wgpu walkable client | 9.00 |
+| craft-db + protocol | 5.00 |
+| craft-server (Tokio) | 5.00 |
+| Net e2e | 6.00 |
+| Ambient occlusion | 5.00 |
+| Online engine + 2-client e2e | 14.00 |
+| Product e2e (full stream + HUD + peers) | 16.00 |
+| Clippy 1.97 fix | 1.20 |
+| Demo recorder + lavapipe CI | 16.00 |
+| PR#1 open / verify / merge | 1.50 |
+| Rust-first README finish | 3.00 |
+| README price tag + DAG | 1.50 |
+| islo snapshots + GH gates | 0.00 |
+| **Total** | **107.25** |
+
+## Execution DAG (cleared)
+
+How the rewrite was sequenced and gated — every node below is green.
+
+```mermaid
+flowchart TD
+  A[A_oracle] --> B[B_matrix_cube]
+  B --> C[C_mesh]
+  C --> D[D_physics]
+  D --> E[E_client]
+  D --> H[H_db]
+  D --> I[I_proto]
+  H --> J[J_server]
+  I --> J
+  C --> G[G_AO]
+  E --> G
+  G --> S[S_full_stream]
+  J --> S
+  E --> F[F_HUD_daylight]
+  S --> K[K_connect_peers]
+  F --> K
+  K --> L[L_craft_full_v2]
+  L --> M[M_demo_lavapipe]
+  M --> N[N_README_price_DAG]
+```
+
+| Node | What cleared it |
+|---|---|
+| A oracle | C dumpers → goldens → Rust parity |
+| B–D | matrix / cube / mesh / physics + e2e tests |
+| E client | walkable wgpu + `--smoke` |
+| H–J | db + protocol + Tokio server |
+| G AO | neighborhood occlusion + `ao_sum` |
+| S full stream | chunk >2000 blocks, no sample cap |
+| F / K | HUD, daylight, hotbar, peer markers, `--connect` |
+| L | islo mp-e2e → snapshot `craft-full-v2` |
+| M | headless `--demo` on lavapipe → `docs/demo.{mp4,gif}` |
+| N | Rust-first README + this price tag + DAG on `master` |
+
+Full board: [`rust/EXECUTION.md`](rust/EXECUTION.md).
 
 ---
 
