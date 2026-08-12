@@ -341,21 +341,35 @@
         "total": 75000
       },
       "notes": "opened PR#1 to zozo123/Craft (billing+flow body); PR-CI green (parity+demo); rust-1.97 gate green; merged to master d53c1e8 (6 crates + rust-e2e + demo)"
+    },
+    {
+      "id": "finish-readme-29",
+      "ts": "2026-08-12T07:30:00Z",
+      "job": "finish-readme",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 3.0,
+      "agent_tokens": {
+        "in": 150000,
+        "out": 0,
+        "total": 150000
+      },
+      "notes": "Rust-first README (demo+quickstart+layout+CI); CI path filters include README/docs/master; EXECUTION finish node; PR+merge to zozo123/Craft master within remaining budget"
     }
   ],
-  "cumulative_est_usd": 102.75,
-  "remaining_usd": 17.25,
+  "cumulative_est_usd": 105.75,
+  "remaining_usd": 14.25,
   "next_allocation": [
     {
-      "wave": "PR+CI-verify",
-      "job": "rust-1.97 regress + GH rust-e2e (demo artifact) + open PR to zozo123/Craft (0 tokens)",
+      "wave": "finish-gates",
+      "job": "GH rust-e2e on README PR + merge (0 tokens)",
       "est_usd": 0.0,
       "est_tokens": 0
     },
     {
       "wave": "reserve",
       "job": "retries only",
-      "est_usd": 18.75,
+      "est_usd": 14.25,
       "est_tokens": 0
     }
   ],
@@ -364,11 +378,11 @@
     "parity_gate_fails_twice"
   ],
   "finish_line": {
-    "target": "craft-full-v2 + demo",
+    "target": "craft-full-v2 + demo + Rust README on master",
     "cap_usd": 120,
-    "prior_spent_usd": 101.25,
-    "note": "PRODUCT e2e green on rust-1.97: AO + live multiplayer (engine+interactive) + HUD/peers/full-stream + headless networked video demo (lavapipe). Snapshots craft-ao-v1, craft-full-v1, craft-full-v2. Demo committed at docs/demo.{mp4,gif}; PR opened to zozo123/Craft."
+    "prior_spent_usd": 105.75,
+    "note": "PRODUCT finish: AO + live MP + HUD/peers/full-stream + lavapipe demo + Rust-first README on zozo123/Craft master. Snapshots craft-ao-v1..craft-full-v2."
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 2685000
+  "cumulative_tokens": 2835000
 }

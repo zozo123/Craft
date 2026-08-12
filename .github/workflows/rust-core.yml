@@ -9,12 +9,14 @@ name: rust-e2e
 
 on:
   push:
-    branches: [rust-rewrite]
+    branches: [rust-rewrite, master]
     paths:
       - "rust/**"
       - "oracle/**"
       - "src/**"
       - "deps/noise/**"
+      - "docs/**"
+      - "README.md"
       - ".github/workflows/rust-core.yml"
   pull_request:
     paths:
@@ -22,6 +24,8 @@ on:
       - "oracle/**"
       - "src/**"
       - "deps/noise/**"
+      - "docs/**"
+      - "README.md"
       - ".github/workflows/rust-core.yml"
   workflow_dispatch: {}
 
