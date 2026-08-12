@@ -31,6 +31,8 @@ flowchart TD
 | F HUD + daylight + hotbar 1–9 | interactive `--connect` |
 | P peer markers | drawn in `--connect` |
 | L2 | GH + islo → **`craft-full-v2`** |
+| Demo + CI | `--demo` + lavapipe artifact + PR#1 merged |
+| README finish | Rust-first README + docs demo on `master` |
 
 ## Run
 

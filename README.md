@@ -1,4 +1,107 @@
-## Craft
+# Craft (Rust rewrite)
+
+Minecraft-style voxel game, rewritten end to end in **Rust** — `winit` + `wgpu` (WGSL) client, Tokio TCP server, SQLite persistence, line-oriented multiplayer protocol. The original C client and Python server remain in-tree for reference and golden parity (see [Original C Craft](#original-c-craft)).
+
+Fork: [zozo123/Craft](https://github.com/zozo123/Craft) · Upstream: [fogleman/Craft](https://github.com/fogleman/Craft)
+
+![Craft (Rust) networked demo](docs/demo.gif)
+
+*Headless e2e demo (software Vulkan / lavapipe): live server + bot peer builds a tower while an orbit camera records the world. Full quality: [`docs/demo.mp4`](docs/demo.mp4). Details: [`docs/DEMO.md`](docs/DEMO.md).*
+
+## Features (Rust product)
+
+* Deterministic terrain (simplex / perlin noise) bit-checked against the C oracle
+* Chunk meshing with ambient occlusion, plants, transparency
+* Walkable client: WASD, jump, mouse look, day/night, HUD crosshair, hotbar 1–9
+* Multiplayer: Tokio server, full chunk stream, block place/break, peer markers
+* SQLite world persistence (`craft-db`)
+* Headless `--demo` recorder (PNG frames → mp4/gif) for CI and sandboxes
+* CI gate `rust-e2e`: fmt, clippy `-D warnings`, C-golden parity tests, net e2e, demo artifact
+
+## Quick start
+
+Requires a recent Rust toolchain (`rustup` stable).
+
+```bash
+git clone https://github.com/zozo123/Craft.git
+cd Craft/rust
+
+# Terminal A — server
+cargo run -p craft-server -- 0.0.0.0:4080
+
+# Terminal B — interactive client (GPU / display required)
+cargo run -p craft-client -- --connect 127.0.0.1:4080
+```
+
+### Headless / CI modes
+
+```bash
+# Mesh + GPU adapter smoke (safe without a window)
+cargo run -p craft-client -- --smoke
+
+# Network handshake + full chunk (needs a running server)
+cargo run -p craft-client -- --net-smoke 127.0.0.1:4080
+cargo run -p craft-client -- --net-play 127.0.0.1:4080
+
+# Offscreen networked video (needs Vulkan / Metal / DX12; lavapipe on Linux CI)
+cargo run -p craft-client -- --demo 127.0.0.1:4080 --frames 150 --out frames --size 960x540
+```
+
+Textures are loaded from `textures/texture.png` (repo root) relative to the process cwd — run from `rust/` or set paths accordingly.
+
+## Workspace layout
+
+| Crate | Role |
+|---|---|
+| `craft-core` | Config, items, noise, world, map, mesh + AO, physics, matrix, cube |
+| `craft-protocol` | Line-oriented packet encode / parse |
+| `craft-db` | SQLite block persistence |
+| `craft-server` | Tokio TCP multiplayer server |
+| `craft-client` | wgpu client, `OnlineWorld`, `--demo` recorder |
+| `craft-sim` | Headless mesh / AO stats |
+
+## Controls (Rust client)
+
+| Input | Action |
+|---|---|
+| WASD | Move |
+| Space / Shift | Jump / descend (flying) |
+| Mouse | Look |
+| Left / Right click | Break / place |
+| 1–9 | Hotbar item |
+| Esc | Quit |
+
+## Architecture (e2e)
+
+```
+craft-server (Tokio) ── craft-protocol ──▶ craft-client / --demo / --net-play
+      ▲ persist (craft-db / SQLite)              │
+      │                                         ▼
+  peers / bots ── Block + Position ──▶ OnlineWorld ── mesh_map + AO (craft-core)
+                                                    ▼
+                                          wgpu + WGSL (window or offscreen)
+```
+
+## CI & verification
+
+Workflow: [`.github/workflows/rust-core.yml`](.github/workflows/rust-core.yml) (`rust-e2e`)
+
+1. Build C oracle → generate goldens
+2. `cargo fmt --check` · `clippy -D warnings` · `cargo test --all` (parity)
+3. Client `--smoke` · net e2e (`online_e2e`, `e2e_net`, `--net-smoke`, `--net-play`)
+4. Headless demo on lavapipe → upload `craft-rust-demo` artifact (mp4 + gif)
+
+Deterministic `islo` snapshots used during the rewrite: `craft-base-v1` … `craft-full-v2`.
+
+## Cost / execution notes
+
+Token-primary ledger for the rewrite: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · graph: [`rust/EXECUTION.md`](rust/EXECUTION.md) · live trace: [`rust/COST_TRACE.md`](rust/COST_TRACE.md).
+
+---
+
+## Original C Craft
+
+The sections below are the upstream [fogleman/Craft](https://github.com/fogleman/Craft) README, kept for the C client / Python server and historical implementation notes.
 
 Minecraft clone for Windows, Mac OS X and Linux. Just a few thousand lines of C using modern OpenGL (shaders). Online multiplayer support is included using a Python-based server.
 
@@ -76,7 +179,7 @@ You can connect to a server with command line arguments...
 ```
 
 Or, with the "/online" command in the game itself.
-    
+
     /online [HOST [PORT]]
 
 #### Server
