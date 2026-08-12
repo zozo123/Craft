@@ -369,21 +369,35 @@
         "total": 75000
       },
       "notes": "README price tag ($105.75/$120) + wave table + mermaid DAG (A→N) on master"
+    },
+    {
+      "id": "pages-invoice-31",
+      "ts": "2026-08-12T07:45:00Z",
+      "job": "pages-invoice",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 2.5,
+      "agent_tokens": {
+        "in": 125000,
+        "out": 0,
+        "total": 125000
+      },
+      "notes": "GitHub Pages docs/index.html: budget model, invoice, DAG, islo snapshots/jobs, CI, links, credits; pages.yml deploy"
     }
   ],
-  "cumulative_est_usd": 107.25,
-  "remaining_usd": 12.75,
+  "cumulative_est_usd": 109.75,
+  "remaining_usd": 10.25,
   "next_allocation": [
     {
-      "wave": "finish-gates",
-      "job": "GH rust-e2e on price-tag PR + merge (0 tokens)",
+      "wave": "pages-deploy",
+      "job": "enable Pages + merge PR (0 tokens)",
       "est_usd": 0.0,
       "est_tokens": 0
     },
     {
       "wave": "reserve",
       "job": "retries only",
-      "est_usd": 12.75,
+      "est_usd": 10.25,
       "est_tokens": 0
     }
   ],
@@ -392,11 +406,11 @@
     "parity_gate_fails_twice"
   ],
   "finish_line": {
-    "target": "craft-full-v2 + demo + README price tag + DAG on master",
+    "target": "Pages invoice + craft-full-v2 on zozo123/Craft master",
     "cap_usd": 120,
-    "prior_spent_usd": 107.25,
-    "note": "PRODUCT finish on zozo123/Craft master: AO + MP + demo + Rust README with $105.75/$120 price tag and A→N mermaid DAG."
+    "prior_spent_usd": 109.75,
+    "note": "PRODUCT finish: AO + MP + lavapipe demo + README price/DAG + GitHub Pages invoice (budget/sandboxes/credits) at zozo123.github.io/Craft"
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 2910000
+  "cumulative_tokens": 3035000
 }

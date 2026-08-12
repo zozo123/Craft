@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CRAFT · C → Rust · zozo123</title>
+  <meta name="description" content="Invoice, budget, DAG, sandboxes, and e2e demo for the zozo123 Craft C→Rust rewrite." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14201a;
+      --paper: #e9f0ea;
+      --moss: #2f6b45;
+      --moss-deep: #1e4630;
+      --sand: #c9b48a;
+      --warn: #b54a2a;
+      --line: rgba(20, 32, 26, 0.14);
+      --invoice: #f4f7f2;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+      --display: "Syne", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.5;
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(142, 184, 212, 0.35), transparent 60%),
+        radial-gradient(900px 500px at -10% 20%, rgba(47, 107, 69, 0.18), transparent 55%),
+        linear-gradient(180deg, #dfe9e2 0%, var(--paper) 40%, #d5e2d8 100%);
+      min-height: 100vh;
+    }
+    a { color: var(--moss-deep); }
+    a:hover { color: var(--warn); }
+    .wrap { width: min(1080px, calc(100% - 2rem)); margin-inline: auto; }
+
+    .nav-strip {
+      display: flex; flex-wrap: wrap; gap: 0.55rem 1rem;
+      padding: 0.75rem 0; font-size: 0.72rem; letter-spacing: 0.04em;
+      text-transform: uppercase; border-bottom: 1px solid var(--line);
+      background: rgba(233, 240, 234, 0.94); position: sticky; top: 0; z-index: 5;
+    }
+    .nav-strip a { text-decoration: none; color: var(--moss-deep); }
+    .nav-strip a:hover { color: var(--warn); }
+
+    .hero {
+      position: relative; min-height: 100svh; display: grid; align-items: end;
+      overflow: hidden; isolation: isolate;
+    }
+    .hero-media { position: absolute; inset: 0; z-index: -2; background: #0d1612; }
+    .hero-media img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      filter: saturate(1.05) contrast(1.05);
+    }
+    .hero-veil {
+      position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(180deg, rgba(13,22,18,.15) 0%, rgba(13,22,18,.55) 55%, rgba(13,22,18,.92) 100%);
+    }
+    .hero-inner { padding: 2rem 0 2.75rem; color: #f2f7f3; }
+    .brand {
+      font-family: var(--display); font-weight: 800;
+      font-size: clamp(3.4rem, 12vw, 7.5rem); letter-spacing: -0.04em;
+      line-height: 0.9; margin: 0 0 0.55rem; text-transform: uppercase;
+    }
+    .brand span {
+      display: block; font-size: 0.22em; letter-spacing: 0.28em;
+      font-weight: 600; opacity: 0.8; margin-bottom: 0.55rem;
+    }
+    .lede {
+      max-width: 36rem; margin: 0 0 1.35rem; font-size: 0.95rem;
+      color: rgba(242, 247, 243, 0.86);
+    }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
+    .btn {
+      appearance: none; border: 1px solid rgba(242,247,243,.55); background: transparent;
+      color: #f2f7f3; font: 600 0.78rem/1 var(--mono); letter-spacing: 0.04em;
+      text-decoration: none; padding: 0.85rem 1rem;
+      transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+    }
+    .btn:hover { background: #f2f7f3; color: var(--ink); border-color: #f2f7f3; }
+    .btn.solid { background: var(--moss); border-color: var(--moss); }
+    .btn.solid:hover { background: #f2f7f3; color: var(--ink); }
+    .price-chip {
+      font: 600 0.78rem/1 var(--mono); letter-spacing: 0.02em;
+      padding: 0.85rem 0.2rem 0.85rem 0.4rem; color: var(--sand);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .brand { animation: rise 700ms cubic-bezier(.2,.8,.2,1) both; }
+      .lede { animation: rise 700ms 80ms cubic-bezier(.2,.8,.2,1) both; }
+      .cta-row { animation: rise 700ms 140ms cubic-bezier(.2,.8,.2,1) both; }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: none; }
+      }
+    }
+
+    section { padding: 3rem 0; }
+    .section-kicker {
+      font: 600 0.72rem/1 var(--mono); letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--moss); margin: 0 0 0.65rem;
+    }
+    h2 {
+      font-family: var(--display); font-weight: 700;
+      font-size: clamp(1.7rem, 4vw, 2.4rem); letter-spacing: -0.02em; margin: 0 0 0.75rem;
+    }
+    .section-copy {
+      max-width: 42rem; margin: 0 0 1.35rem; color: rgba(20, 32, 26, 0.78);
+    }
+    .prose { max-width: 46rem; color: rgba(20, 32, 26, 0.82); margin: 0 0 1.25rem; }
+    .prose p { margin: 0 0 0.85rem; }
+    .prose ul { margin: 0 0 1rem; padding-left: 1.15rem; }
+    .prose li { margin: 0.3rem 0; }
+    .prose code {
+      font-size: 0.86em; background: rgba(47, 107, 69, 0.08); padding: 0.08rem 0.28rem;
+    }
+
+    .invoice {
+      background: var(--invoice); border: 1px solid var(--line);
+      box-shadow: 0 18px 50px rgba(20, 32, 26, 0.08); position: relative; overflow: hidden;
+    }
+    .invoice::before {
+      content: ""; position: absolute; inset: 0 auto 0 0; width: 10px;
+      background: repeating-linear-gradient(180deg, var(--moss) 0 8px, transparent 8px 16px);
+    }
+    .invoice-top {
+      display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;
+      padding: 1.4rem 1.4rem 1.1rem 1.7rem; border-bottom: 1px dashed var(--line);
+    }
+    @media (max-width: 720px) { .invoice-top { grid-template-columns: 1fr; } }
+    .invoice-mark {
+      font-family: var(--display); font-weight: 800; font-size: 1.35rem;
+      letter-spacing: -0.02em; margin: 0 0 0.35rem;
+    }
+    .meta { font-size: 0.78rem; color: rgba(20, 32, 26, 0.7); }
+    .meta strong { color: var(--ink); font-weight: 600; }
+    .stamp {
+      justify-self: end; align-self: start; border: 2px solid var(--moss); color: var(--moss);
+      font: 700 0.85rem/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 0.55rem 0.7rem; transform: rotate(-6deg); background: rgba(47, 107, 69, 0.06);
+    }
+    .totals { display: grid; gap: 0.25rem; font-size: 0.82rem; text-align: right; }
+    .totals .big {
+      font-family: var(--display); font-weight: 800; font-size: 1.8rem;
+      letter-spacing: -0.03em; color: var(--moss-deep);
+    }
+    table.lines, table.data {
+      width: 100%; border-collapse: collapse; font-size: 0.78rem;
+    }
+    table.lines th, table.lines td {
+      padding: 0.55rem 1.1rem 0.55rem 1.7rem; text-align: left;
+      border-bottom: 1px solid var(--line); vertical-align: top;
+    }
+    table.lines th:last-child, table.lines td:last-child { text-align: right; padding-right: 1.4rem; }
+    table.lines th {
+      font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      font-size: 0.68rem; color: rgba(20,32,26,.55); background: rgba(47,107,69,.05);
+    }
+    table.lines tr:last-child td { border-bottom: 0; }
+    .invoice-foot {
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem;
+      padding: 1rem 1.4rem 1.25rem 1.7rem; border-top: 1px dashed var(--line);
+      font-size: 0.75rem; color: rgba(20, 32, 26, 0.65);
+    }
+
+    table.data {
+      margin: 0 0 1.25rem; background: rgba(255,255,255,.35); border: 1px solid var(--line);
+    }
+    table.data th, table.data td {
+      padding: 0.55rem 0.75rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top;
+    }
+    table.data th {
+      font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      font-size: 0.68rem; color: rgba(20,32,26,.55); background: rgba(47,107,69,.05);
+    }
+    table.data tr:last-child td { border-bottom: 0; }
+
+    .dag {
+      background: rgba(255,255,255,.35); border: 1px solid var(--line);
+      padding: 1rem; overflow-x: auto; margin-bottom: 1.25rem;
+    }
+    .mermaid { min-width: 720px; }
+
+    .links {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;
+    }
+    .link-tile {
+      display: block; text-decoration: none; color: inherit; padding: 1rem 1.05rem;
+      border: 1px solid var(--line); background: rgba(255,255,255,.4);
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+    .link-tile:hover { border-color: var(--moss); transform: translateY(-2px); }
+    .link-tile strong {
+      display: block; font-family: var(--display); font-size: 1.05rem; margin-bottom: 0.25rem;
+    }
+    .link-tile span { font-size: 0.78rem; color: rgba(20, 32, 26, 0.65); }
+
+    .credits {
+      border: 1px solid var(--line); background: rgba(255,255,255,.4);
+      padding: 1.1rem 1.2rem; font-size: 0.82rem;
+    }
+    .credits h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 0.55rem; }
+    .credits p { margin: 0 0 0.55rem; }
+    .credits p:last-child { margin: 0; }
+
+    footer {
+      padding: 2rem 0 3rem; border-top: 1px solid var(--line);
+      font-size: 0.75rem; color: rgba(20, 32, 26, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap nav-strip" aria-label="Page sections">
+    <a href="#budget">Budget</a>
+    <a href="#invoice">Invoice</a>
+    <a href="#dag">DAG</a>
+    <a href="#sandboxes">Sandboxes</a>
+    <a href="#ci">CI / e2e</a>
+    <a href="#links">Links</a>
+    <a href="#credits">Credits</a>
+  </div>
+
+  <header class="hero">
+    <div class="hero-media" aria-hidden="true">
+      <img src="./demo.gif" alt="" width="960" height="540" />
+    </div>
+    <div class="hero-veil" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <h1 class="brand">
+        <span>zozo123 · C → Rust</span>
+        CRAFT
+      </h1>
+      <p class="lede">
+        End-to-end rewrite of Michael Fogleman’s Craft: C + OpenGL + Python server →
+        Rust (winit + wgpu + Tokio). This Pages site is the invoice, DAG, sandbox map,
+        and e2e demo for the <a href="https://github.com/zozo123/Craft" style="color:#c9b48a">zozo123/Craft</a> fork.
+      </p>
+      <div class="cta-row">
+        <a class="btn solid" href="#budget">How the budget worked</a>
+        <a class="btn" href="https://github.com/zozo123/Craft">GitHub</a>
+        <a class="btn" href="https://github.com/zozo123/Craft/blob/master/README.md">README</a>
+        <a class="btn" href="./demo.mp4">demo.mp4</a>
+        <span class="price-chip">$109.75 / $120</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="budget">
+      <div class="wrap">
+        <p class="section-kicker">Budget model</p>
+        <h2>Token-primary accounting</h2>
+        <div class="prose">
+          <p>
+            The rewrite ran under a hard cap of <strong>$120</strong>. Cost is
+            <strong>token-primary</strong>: agent work is estimated from tokens at
+            <code>$0.02 per 1k tokens</code>, then converted to USD. The live append-only
+            ledger is
+            <a href="https://github.com/zozo123/Craft/blob/master/rust/tools/spend-ledger.json">rust/tools/spend-ledger.json</a>
+            (reporter: <a href="https://github.com/zozo123/Craft/blob/master/rust/tools/cost_report.py">cost_report.py</a>).
+          </p>
+          <ul>
+            <li><strong>What costs money:</strong> Cursor agent coding turns (plan, port, fix, docs).</li>
+            <li><strong>What is $0 tokens:</strong> GitHub Actions <code>rust-e2e</code>, islo job runs, snapshot bakes, sandboxes that only compile/test/record.</li>
+            <li><strong>Hard stop:</strong> refuse entries once cumulative ≥ $120; no nested agents inside islo VMs (API unreachable / phantom key).</li>
+            <li><strong>Execution model:</strong> Cursor writes Rust · islo runs deterministic gates · GH Actions is the public e2e mirror.</li>
+          </ul>
+          <p>
+            Trace narrative:
+            <a href="https://github.com/zozo123/Craft/blob/master/rust/COST_TRACE.md">COST_TRACE.md</a>
+            · board:
+            <a href="https://github.com/zozo123/Craft/blob/master/rust/EXECUTION.md">EXECUTION.md</a>.
+          </p>
+        </div>
+        <table class="data">
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Cap</td><td>$120.00</td></tr>
+            <tr><td>Spent</td><td><strong>$109.75</strong> (91%)</td></tr>
+            <tr><td>Remaining</td><td>$10.25</td></tr>
+            <tr><td>Tokens (est.)</td><td>~3.04M</td></tr>
+            <tr><td>Pricing prior</td><td>$0.02 / 1k tokens</td></tr>
+            <tr><td>Gates</td><td>islo + GH = $0 agent tokens</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="invoice">
+      <div class="wrap">
+        <p class="section-kicker">Invoice</p>
+        <h2>Workshop packing slip</h2>
+        <p class="section-copy">
+          Line items match the ledger waves. Status stamps the work as merged to
+          <code>zozo123/Craft</code> <code>master</code> within budget.
+        </p>
+
+        <article class="invoice" aria-label="Rewrite cost invoice">
+          <div class="invoice-top">
+            <div>
+              <p class="invoice-mark">INV-CRAFT-RUST-001</p>
+              <p class="meta">
+                <strong>Bill to</strong> zozo123 / Craft fork<br />
+                <strong>From</strong> C (GLFW/OpenGL + Python server) → Rust (wgpu/Tokio)<br />
+                <strong>Status</strong> MERGED · master · PRs
+                <a href="https://github.com/zozo123/Craft/pull/1">#1</a>–
+                <a href="https://github.com/zozo123/Craft/pull/3">#3</a> (+ Pages)
+              </p>
+            </div>
+            <div>
+              <div class="stamp">PAID IN BUDGET</div>
+              <div class="totals" style="margin-top:1rem">
+                <div>Cap $120.00</div>
+                <div class="big">$109.75</div>
+                <div>Remain $10.25 · 91% · ~3.04M tok</div>
+              </div>
+            </div>
+          </div>
+          <table class="lines">
+            <thead><tr><th>Wave</th><th>Amount</th></tr></thead>
+            <tbody>
+              <tr><td>Planning + DAG + cost model</td><td>$8.00</td></tr>
+              <tr><td>Oracle harness (C goldens)</td><td>$1.50</td></tr>
+              <tr><td>Core port + finish (parity)</td><td>$5.00</td></tr>
+              <tr><td>Matrix + cube</td><td>$3.50</td></tr>
+              <tr><td>Mesh + craft-sim</td><td>$2.50</td></tr>
+              <tr><td>Physics</td><td>$3.00</td></tr>
+              <tr><td>DAG reopt</td><td>$0.50</td></tr>
+              <tr><td>wgpu walkable client</td><td>$9.00</td></tr>
+              <tr><td>craft-db + protocol</td><td>$5.00</td></tr>
+              <tr><td>craft-server (Tokio)</td><td>$5.00</td></tr>
+              <tr><td>Net e2e</td><td>$6.00</td></tr>
+              <tr><td>Ambient occlusion</td><td>$5.00</td></tr>
+              <tr><td>Online engine + 2-client e2e</td><td>$14.00</td></tr>
+              <tr><td>Product e2e (stream + HUD + peers)</td><td>$16.00</td></tr>
+              <tr><td>Clippy 1.97 fix</td><td>$1.20</td></tr>
+              <tr><td>Demo recorder + lavapipe CI</td><td>$16.00</td></tr>
+              <tr><td>PR#1 open / verify / merge</td><td>$1.50</td></tr>
+              <tr><td>Rust-first README</td><td>$3.00</td></tr>
+              <tr><td>README price tag + DAG</td><td>$1.50</td></tr>
+              <tr><td>GitHub Pages (invoice + explanations)</td><td>$2.50</td></tr>
+              <tr><td>islo snapshots + GH gates</td><td>$0.00</td></tr>
+              <tr><td><strong>Total</strong></td><td><strong>$109.75</strong></td></tr>
+            </tbody>
+          </table>
+          <div class="invoice-foot">
+            <div>Terms: hard stop at $120 · no nested agents in islo VMs</div>
+            <div>Artifacts: docs/demo.{mp4,gif} · workflow rust-e2e + pages</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="dag">
+      <div class="wrap">
+        <p class="section-kicker">Execution graph</p>
+        <h2>Cleared DAG</h2>
+        <div class="prose">
+          <p>
+            The rewrite was sequenced as a software-factory DAG: each node had a
+            concrete gate (unit/parity test, net e2e, islo bake, or GH Actions).
+            Later nodes were deliberately re-ordered so a walkable / networked
+            client shipped before polish (HUD/AO) — then AO, HUD, peers, demo, and
+            docs closed the finish line.
+          </p>
+        </div>
+        <div class="dag">
+          <pre class="mermaid">
+flowchart LR
+  A[A_oracle] --> B[B_matrix_cube]
+  B --> C[C_mesh]
+  C --> D[D_physics]
+  D --> E[E_client]
+  D --> H[H_db]
+  D --> I[I_proto]
+  H --> J[J_server]
+  I --> J
+  C --> G[G_AO]
+  E --> G
+  G --> S[S_full_stream]
+  J --> S
+  E --> F[F_HUD]
+  S --> K[K_peers]
+  F --> K
+  K --> L[L_full_v2]
+  L --> M[M_demo]
+  M --> N[N_README]
+  N --> P[P_pages]
+          </pre>
+        </div>
+        <table class="data">
+          <thead><tr><th>Node</th><th>What it delivered</th><th>Gate</th></tr></thead>
+          <tbody>
+            <tr><td>A oracle</td><td>C dumpers → goldens</td><td><code>make -C oracle golden</code> + Rust parity</td></tr>
+            <tr><td>B–D</td><td>matrix, cube, mesh, physics</td><td>crate tests / mesh_e2e</td></tr>
+            <tr><td>E client</td><td>walkable wgpu window</td><td><code>--smoke</code></td></tr>
+            <tr><td>H–J</td><td>db, protocol, Tokio server</td><td><code>e2e_net</code></td></tr>
+            <tr><td>G AO</td><td>neighborhood occlusion</td><td><code>ao_sum</code> + mesh-fanout</td></tr>
+            <tr><td>S full stream</td><td>chunk &gt;2000 blocks</td><td>net-smoke / net-play</td></tr>
+            <tr><td>F / K</td><td>HUD, daylight, hotbar, peers</td><td><code>--connect</code> + online_e2e</td></tr>
+            <tr><td>L full-v2</td><td>product mp e2e snapshot</td><td>islo <code>craft-mp-e2e</code></td></tr>
+            <tr><td>M demo</td><td>lavapipe offscreen video</td><td>GH <code>demo</code> job + docs/</td></tr>
+            <tr><td>N / P</td><td>README + this Pages invoice</td><td>PR merge + pages workflow</td></tr>
+          </tbody>
+        </table>
+        <p class="section-copy">
+          Source of truth:
+          <a href="https://github.com/zozo123/Craft/blob/master/rust/EXECUTION.md">rust/EXECUTION.md</a>.
+        </p>
+      </div>
+    </section>
+
+    <section id="sandboxes">
+      <div class="wrap">
+        <p class="section-kicker">islo.dev sandboxes</p>
+        <h2>Snapshots &amp; jobs used</h2>
+        <div class="prose">
+          <p>
+            <a href="https://islo.dev">islo</a> VMs were the deterministic factory floor:
+            restore a snapshot, pull <code>rust-rewrite</code>, run gates, optionally bake
+            the next snapshot. Agent tokens inside those VMs = 0. Nested Cursor agents
+            were blocked (unreachable API / phantom key) — Cursor wrote code; islo only
+            compiled, tested, and recorded.
+          </p>
+        </div>
+        <table class="data">
+          <thead><tr><th>Snapshot</th><th>Role</th><th>~Size</th></tr></thead>
+          <tbody>
+            <tr><td><code>craft-base-v1</code></td><td>Oracle / base toolchain after C goldens job</td><td>238 MB</td></tr>
+            <tr><td><code>craft-mesh-v1</code></td><td>Mesh / core gate bake</td><td>261 MB</td></tr>
+            <tr><td><code>craft-sim-v1</code></td><td>craft-sim mesh stats path</td><td>277 MB</td></tr>
+            <tr><td><code>craft-full-v0</code></td><td>First full client+server vertical</td><td>1.0 GB</td></tr>
+            <tr><td><code>craft-ao-v1</code></td><td>AO mesh-grid fanout bake</td><td>1.0 GB</td></tr>
+            <tr><td><code>craft-full-v1</code></td><td>Multiplayer engine e2e</td><td>1.2 GB</td></tr>
+            <tr><td><code>craft-full-v2</code></td><td>Product finish (full stream + HUD + peers)</td><td>1.2 GB</td></tr>
+          </tbody>
+        </table>
+        <table class="data">
+          <thead><tr><th>Job / sandbox pattern</th><th>What it proved</th><th>Job path</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>craft-oracle</code></td>
+              <td>C oracle goldens on a fresh VM</td>
+              <td><a href="https://github.com/zozo123/Craft/tree/master/jobs/craft-oracle">jobs/craft-oracle</a></td>
+            </tr>
+            <tr>
+              <td><code>craft-gate</code></td>
+              <td>fmt / clippy / parity gate bake</td>
+              <td><a href="https://github.com/zozo123/Craft/tree/master/jobs/craft-gate">jobs/craft-gate</a></td>
+            </tr>
+            <tr>
+              <td><code>craft-mesh-fanout</code></td>
+              <td>AO mesh-grid signals → <code>craft-ao-v1</code></td>
+              <td><a href="https://github.com/zozo123/Craft/tree/master/jobs/craft-mesh-fanout">jobs/craft-mesh-fanout</a></td>
+            </tr>
+            <tr>
+              <td><code>craft-mp-e2e</code></td>
+              <td>2-client online_e2e + live net-play → <code>craft-full-v2</code></td>
+              <td><a href="https://github.com/zozo123/Craft/tree/master/jobs/craft-mp-e2e">jobs/craft-mp-e2e</a></td>
+            </tr>
+            <tr>
+              <td><code>craft-demo-rec</code> (ad-hoc)</td>
+              <td>Debian12 + lavapipe + ffmpeg → demo.mp4/gif</td>
+              <td>islo use · software Vulkan</td>
+            </tr>
+            <tr>
+              <td><code>craft-*-regress</code> (ad-hoc)</td>
+              <td>rust-1.97 fmt/clippy/test with goldens</td>
+              <td>islo use · craft-full-v1/v2</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ci">
+      <div class="wrap">
+        <p class="section-kicker">Public e2e</p>
+        <h2>GitHub Actions</h2>
+        <div class="prose">
+          <p>
+            Workflow
+            <a href="https://github.com/zozo123/Craft/blob/master/.github/workflows/rust-core.yml">rust-e2e</a>
+            mirrors the factory gates on every push/PR:
+          </p>
+          <ul>
+            <li><strong>parity:</strong> C oracle goldens → fmt → clippy <code>-D warnings</code> → <code>cargo test --all</code> → smoke → net e2e (<code>online_e2e</code>, <code>e2e_net</code>, <code>--net-smoke</code>, <code>--net-play</code>)</li>
+            <li><strong>demo:</strong> install lavapipe + ffmpeg → headless <code>--demo</code> → upload <code>craft-rust-demo</code> artifact</li>
+            <li><strong>pages:</strong> deploy this <code>docs/</code> site to
+              <a href="https://zozo123.github.io/Craft/">zozo123.github.io/Craft</a>
+              (<a href="https://github.com/zozo123/Craft/blob/master/.github/workflows/pages.yml">pages.yml</a>)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="links">
+      <div class="wrap">
+        <p class="section-kicker">Links</p>
+        <h2>zozo123 Craft rewrite</h2>
+        <div class="links">
+          <a class="link-tile" href="https://github.com/zozo123/Craft">
+            <strong>zozo123/Craft</strong>
+            <span>Fork master — Rust product + C appendix</span>
+          </a>
+          <a class="link-tile" href="https://zozo123.github.io/Craft/">
+            <strong>GitHub Pages</strong>
+            <span>This invoice + DAG + sandbox map</span>
+          </a>
+          <a class="link-tile" href="https://github.com/zozo123/Craft/pull/1">
+            <strong>PR #1</strong>
+            <span>C → Rust rewrite + lavapipe demo</span>
+          </a>
+          <a class="link-tile" href="https://github.com/zozo123/Craft/pull/2">
+            <strong>PR #2</strong>
+            <span>Rust-first README</span>
+          </a>
+          <a class="link-tile" href="https://github.com/zozo123/Craft/pull/3">
+            <strong>PR #3</strong>
+            <span>Price tag + mermaid DAG on README</span>
+          </a>
+          <a class="link-tile" href="https://github.com/fogleman/Craft">
+            <strong>fogleman/Craft</strong>
+            <span>Upstream original (C + Python)</span>
+          </a>
+          <a class="link-tile" href="./DEMO.md">
+            <strong>DEMO.md</strong>
+            <span>How the headless e2e video was recorded</span>
+          </a>
+          <a class="link-tile" href="https://github.com/zozo123/Craft/blob/master/rust/tools/spend-ledger.json">
+            <strong>spend-ledger.json</strong>
+            <span>Append-only token-primary ledger</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="credits">
+      <div class="wrap">
+        <p class="section-kicker">Credits</p>
+        <h2>Attribution</h2>
+        <div class="credits">
+          <h3>Original Craft</h3>
+          <p>
+            Game design and C implementation by
+            <a href="https://www.michaelfogleman.com/">Michael Fogleman</a>
+            — <a href="https://github.com/fogleman/Craft">github.com/fogleman/Craft</a>.
+            Terrain, protocol ideas, AO approach, and the playable feel remain his.
+          </p>
+          <h3>This rewrite</h3>
+          <p>
+            Rust port, Tokio server, wgpu client, islo factory DAG, lavapipe demo, and
+            this Pages invoice: fork
+            <a href="https://github.com/zozo123/Craft">zozo123/Craft</a>.
+            Execution model: Cursor agent writes Rust; islo.dev sandboxes + GitHub Actions
+            run deterministic e2e gates ($0 agent tokens).
+          </p>
+          <h3>Stack</h3>
+          <p>
+            Rust · winit · wgpu / WGSL · Tokio · SQLite · Mesa lavapipe · ffmpeg ·
+            GitHub Actions · islo.dev snapshots.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      zozo123 · Craft C→Rust · e2e GitHub Pages ·
+      <a href="https://zozo123.github.io/Craft/">zozo123.github.io/Craft</a>
+      · upstream credit <a href="https://github.com/fogleman/Craft">fogleman/Craft</a>
+    </div>
+  </footer>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#d7e8dc",
+        primaryTextColor: "#14201a",
+        primaryBorderColor: "#2f6b45",
+        lineColor: "#1e4630",
+        secondaryColor: "#e9f0ea",
+        tertiaryColor: "#f4f7f2",
+        fontFamily: "IBM Plex Mono, monospace"
+      }
+    });
+  </script>
+</body>
+</html>
