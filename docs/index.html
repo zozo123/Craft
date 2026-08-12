@@ -219,6 +219,7 @@
     <a href="#invoice">Invoice</a>
     <a href="#dag">DAG</a>
     <a href="#sandboxes">Sandboxes</a>
+    <a href="#factory">SW factory</a>
     <a href="#ci">CI / e2e</a>
     <a href="#links">Links</a>
     <a href="#credits">Credits</a>
@@ -244,7 +245,7 @@
         <a class="btn" href="https://github.com/zozo123/Craft">GitHub</a>
         <a class="btn" href="https://github.com/zozo123/Craft/blob/master/README.md">README</a>
         <a class="btn" href="./demo.mp4">demo.mp4</a>
-        <span class="price-chip">$109.75 / $120</span>
+        <span class="price-chip">$111.25 / $120</span>
       </div>
     </div>
   </header>
@@ -280,9 +281,9 @@
           <thead><tr><th>Metric</th><th>Value</th></tr></thead>
           <tbody>
             <tr><td>Cap</td><td>$120.00</td></tr>
-            <tr><td>Spent</td><td><strong>$109.75</strong> (91%)</td></tr>
-            <tr><td>Remaining</td><td>$10.25</td></tr>
-            <tr><td>Tokens (est.)</td><td>~3.04M</td></tr>
+            <tr><td>Spent</td><td><strong>$111.25</strong> (93%)</td></tr>
+            <tr><td>Remaining</td><td>$8.75</td></tr>
+            <tr><td>Tokens (est.)</td><td>~3.11M</td></tr>
             <tr><td>Pricing prior</td><td>$0.02 / 1k tokens</td></tr>
             <tr><td>Gates</td><td>islo + GH = $0 agent tokens</td></tr>
           </tbody>
@@ -315,8 +316,8 @@
               <div class="stamp">PAID IN BUDGET</div>
               <div class="totals" style="margin-top:1rem">
                 <div>Cap $120.00</div>
-                <div class="big">$109.75</div>
-                <div>Remain $10.25 · 91% · ~3.04M tok</div>
+                <div class="big">$111.25</div>
+                <div>Remain $8.75 · 93% · ~3.11M tok</div>
               </div>
             </div>
           </div>
@@ -343,8 +344,9 @@
               <tr><td>Rust-first README</td><td>$3.00</td></tr>
               <tr><td>README price tag + DAG</td><td>$1.50</td></tr>
               <tr><td>GitHub Pages (invoice + explanations)</td><td>$2.50</td></tr>
+              <tr><td>SW factory lessons (islo + Incredibuild)</td><td>$1.50</td></tr>
               <tr><td>islo snapshots + GH gates</td><td>$0.00</td></tr>
-              <tr><td><strong>Total</strong></td><td><strong>$109.75</strong></td></tr>
+              <tr><td><strong>Total</strong></td><td><strong>$111.25</strong></td></tr>
             </tbody>
           </table>
           <div class="invoice-foot">
@@ -477,6 +479,90 @@ flowchart LR
       </div>
     </section>
 
+    <section id="factory">
+      <div class="wrap">
+        <p class="section-kicker">Software factory</p>
+        <h2>How we ran it — what worked / less so</h2>
+        <div class="prose">
+          <p>
+            This rewrite was treated as a <strong>software factory</strong>: a DAG of
+            small work units, each with a deterministic gate, a budget line, and a
+            clear handoff. An agent (Cursor) writes code; the floor
+            (<a href="https://islo.dev">islo.dev</a> sandboxes + GitHub Actions)
+            compiles, tests, bakes snapshots, and records demos at
+            <strong>$0 agent tokens</strong>. Build-acceleration platforms like
+            <a href="https://www.incredibuild.com">Incredibuild</a> sit in the same
+            factory mindset — distribute expensive compile/link work — and are linked
+            here as part of that ecosystem; this particular run’s gates were carried by
+            islo VMs + GH runners rather than an Incredibuild grid.
+          </p>
+        </div>
+
+        <table class="data">
+          <thead><tr><th>Role</th><th>Tool</th><th>In this project</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Agent / writer</td>
+              <td>Cursor</td>
+              <td>Ports, fixes, docs, ledger — the only token-costing layer</td>
+            </tr>
+            <tr>
+              <td>Sandbox floor</td>
+              <td><a href="https://islo.dev">islo.dev</a></td>
+              <td>Snapshot ladder <code>craft-base-v1</code>…<code>craft-full-v2</code>, job TOMLs, parallel signals, lavapipe demo record</td>
+            </tr>
+            <tr>
+              <td>Public e2e mirror</td>
+              <td>GitHub Actions</td>
+              <td><code>rust-e2e</code> parity + demo artifact; <code>pages</code> deploy</td>
+            </tr>
+            <tr>
+              <td>Distributed builds</td>
+              <td><a href="https://www.incredibuild.com">Incredibuild</a></td>
+              <td>Linked as SW-factory build acceleration; not wired into this Cargo/islo path</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 style="font-size:1.35rem;margin-top:1.5rem">What worked</h2>
+        <div class="prose">
+          <ul>
+            <li><strong>DAG + budget ledger</strong> — forced finish-line clarity; token-primary accounting kept gates free and spend visible.</li>
+            <li><strong>islo snapshots</strong> — restore → pull → gate → bake meant fast, repeatable e2e without rebuilding the world each time.</li>
+            <li><strong>Parallel sandboxes for signals</strong> — mesh fanout, mp-e2e, regress, net-play ran side by side; cheap retries.</li>
+            <li><strong>C oracle goldens</strong> — bit-parity against the original sources caught port drift early.</li>
+            <li><strong>Split of labor</strong> — Cursor writes; islo/GH only run. Nested agents inside VMs were correctly abandoned.</li>
+            <li><strong>Headless lavapipe demo</strong> — proved the full stack without a display and gave a shareable artifact for Pages/README.</li>
+            <li><strong>Reordering the DAG</strong> — ship walkable + net before perfect AO/HUD, then close polish — got to a playable product faster.</li>
+          </ul>
+        </div>
+
+        <h2 style="font-size:1.35rem;margin-top:1.25rem">What worked less</h2>
+        <div class="prose">
+          <ul>
+            <li><strong>Nested agents in islo</strong> — <code>api.cursor.com</code> unreachable from job sandboxes / phantom API key. Factory rule became: no agents in the VM.</li>
+            <li><strong>Toolchain skew</strong> — rust-1.97 clippy caught <code>unnecessary_unwrap</code> that local 1.92 / GH stable missed; need the strictest gate in the loop.</li>
+            <li><strong>Silent <code>set -e</code> failures</strong> — early sandbox scripts exited 101 with no logs; had to re-run with captured RCs.</li>
+            <li><strong>Snapshot name collisions</strong> — rebaking <code>craft-full-v2</code> failed until the stale snapshot was deleted.</li>
+            <li><strong>Latent GPU uniform stride</strong> — interactive path never hit CI until offscreen demo; WGSL 112B vs Rust 96B.</li>
+            <li><strong>Ad-hoc multi-client stress</strong> — 4× <code>--net-play</code> editing the same block hung; 2-client mp-e2e remained the trusted gate.</li>
+            <li><strong>Incredibuild not on the critical path</strong> — Cargo builds here were local/islo/GH single-machine; an IncrediBuild grid would matter more for heavier CMake/MSVC or huge workspaces than this Rust crate set.</li>
+          </ul>
+        </div>
+
+        <div class="prose">
+          <p>
+            Bottom line: the SW factory worked when the <em>graph</em> was honest, gates were
+            deterministic and free, and agents stayed on the write side of the line.
+            Links:
+            <a href="https://islo.dev">islo.dev</a> ·
+            <a href="https://www.incredibuild.com">incredibuild.com</a> ·
+            <a href="https://github.com/zozo123/Craft">zozo123/Craft</a>.
+          </p>
+        </div>
+      </div>
+    </section>
+
     <section id="ci">
       <div class="wrap">
         <p class="section-kicker">Public e2e</p>
@@ -503,6 +589,14 @@ flowchart LR
         <p class="section-kicker">Links</p>
         <h2>zozo123 Craft rewrite</h2>
         <div class="links">
+          <a class="link-tile" href="https://islo.dev">
+            <strong>islo.dev</strong>
+            <span>Sandbox floor — snapshots, jobs, $0-token gates</span>
+          </a>
+          <a class="link-tile" href="https://www.incredibuild.com">
+            <strong>Incredibuild</strong>
+            <span>Distributed build acceleration (SW-factory ecosystem)</span>
+          </a>
           <a class="link-tile" href="https://github.com/zozo123/Craft">
             <strong>zozo123/Craft</strong>
             <span>Fork master — Rust product + C appendix</span>
@@ -559,10 +653,20 @@ flowchart LR
             Execution model: Cursor agent writes Rust; islo.dev sandboxes + GitHub Actions
             run deterministic e2e gates ($0 agent tokens).
           </p>
+          <h3>Software factory</h3>
+          <p>
+            Deterministic gates on
+            <a href="https://islo.dev">islo.dev</a>
+            sandboxes and GitHub Actions; agent writes stay in Cursor.
+            <a href="https://www.incredibuild.com">Incredibuild</a>
+            is part of the same accelerated-build / factory ecosystem (not wired into this Cargo path).
+            Lessons: <a href="#factory">SW factory — what worked / less so</a>.
+          </p>
           <h3>Stack</h3>
           <p>
             Rust · winit · wgpu / WGSL · Tokio · SQLite · Mesa lavapipe · ffmpeg ·
-            GitHub Actions · islo.dev snapshots.
+            GitHub Actions · <a href="https://islo.dev">islo.dev</a> snapshots ·
+            <a href="https://www.incredibuild.com">Incredibuild</a> (ecosystem).
           </p>
         </div>
       </div>

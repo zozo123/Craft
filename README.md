@@ -4,9 +4,11 @@ Minecraft-style voxel game, rewritten end to end in **Rust** — `winit` + `wgpu
 
 Fork: [zozo123/Craft](https://github.com/zozo123/Craft) · Upstream: [fogleman/Craft](https://github.com/fogleman/Craft)
 
-**Pages (invoice + demo):** [zozo123.github.io/Craft](https://zozo123.github.io/Craft/)
+**Pages (invoice + demo + factory lessons):** [zozo123.github.io/Craft](https://zozo123.github.io/Craft/)
 
-**Price tag: $109.75 / $120 spent** · ~3.04M tokens · [$10.25 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
+**Price tag: $111.25 / $120 spent** · ~3.11M tokens · [$8.75 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
+
+Floor: [islo.dev](https://islo.dev) · build ecosystem: [Incredibuild](https://www.incredibuild.com) · fork: [zozo123/Craft](https://github.com/zozo123/Craft)
 
 ![Craft (Rust) networked demo](docs/demo.gif)
 
@@ -102,9 +104,9 @@ Deterministic `islo` snapshots used during the rewrite: `craft-base-v1` … `cra
 | | |
 |---|---|
 | **Cap** | **$120.00** |
-| **Spent** | **$109.75** (91%) |
-| **Remaining** | **$10.25** |
-| **Tokens** | ~3.04M (token-primary; `usd_per_1k_tokens = $0.02`) |
+| **Spent** | **$111.25** (93%) |
+| **Remaining** | **$8.75** |
+| **Tokens** | ~3.11M (token-primary; `usd_per_1k_tokens = $0.02`) |
 | **Gates** | islo / GH Actions deterministic runs = **$0** agent tokens |
 
 Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · trace: [`rust/COST_TRACE.md`](rust/COST_TRACE.md).
@@ -131,8 +133,9 @@ Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · t
 | Rust-first README finish | 3.00 |
 | README price tag + DAG | 1.50 |
 | GitHub Pages invoice + explanations | 2.50 |
+| SW factory lessons (islo + Incredibuild) | 1.50 |
 | islo snapshots + GH gates | 0.00 |
-| **Total** | **109.75** |
+| **Total** | **111.25** |
 
 ## Execution DAG (cleared)
 
