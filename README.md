@@ -1,12 +1,12 @@
 # Craft (Rust rewrite)
 
-Minecraft-style voxel game, rewritten end to end in **Rust** — `winit` + `wgpu` (WGSL) client, Tokio TCP server, SQLite persistence, line-oriented multiplayer protocol. The original C client and Python server remain in-tree for reference and golden parity (see [Original C Craft](#original-c-craft)).
+Minecraft-style voxel game whose **playable product is rewritten in Rust** — `winit` + `wgpu` (WGSL) client, Tokio TCP server, SQLite persistence, line-oriented multiplayer protocol. This is **not an all-Rust repository**: the original C client (`src/`), Python server (`server.py`), GLSL shaders, and vendored C libraries (`deps/`) are kept in-tree for reference and as the **golden-parity oracle** (see [Repo composition](#repo-composition) and [Original C Craft](#original-c-craft)).
 
 Fork: [zozo123/Craft](https://github.com/zozo123/Craft) · Upstream: [fogleman/Craft](https://github.com/fogleman/Craft)
 
 **Pages (invoice + demo + factory lessons):** [zozo123.github.io/Craft](https://zozo123.github.io/Craft/) · **YC / Show HN post:** [`docs/YC_POST.md`](docs/YC_POST.md)
 
-**Price tag: $111.25 / $120 spent** · ~3.11M tokens · [$8.75 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
+**Price tag: $112.95 / $120 spent** · ~3.20M tokens · [$7.05 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
 
 Floor: [islo.dev](https://islo.dev) · build ecosystem: [Incredibuild](https://www.incredibuild.com) · fork: [zozo123/Craft](https://github.com/zozo123/Craft)
 
@@ -55,7 +55,22 @@ cargo run -p craft-client -- --demo 127.0.0.1:4080 --frames 150 --out frames --s
 
 Textures are loaded from `textures/texture.png` (repo root) relative to the process cwd — run from `rust/` or set paths accordingly.
 
-## Workspace layout
+## Repo composition
+
+GitHub's language bar shows roughly **Rust ~45% · C ~43% · Python ~10% · GLSL/WGSL/CMake/Make** — because the original project is deliberately retained. Honest breakdown:
+
+| Path | Language | Why it's here |
+|---|---|---|
+| `rust/` | Rust (+ WGSL) | **The shipped product** — client, server, core, protocol, db, sim |
+| `src/` | C | Upstream Fogleman client (reference; not built by the Rust product) |
+| `oracle/` | C | Our C dumpers that generate **golden fixtures** for bit-parity tests |
+| `deps/` | C | Vendored third-party libs (GLEW, GLFW, lodepng, sqlite, noise, tinycthread) |
+| `server.py`, `*.py` | Python | Original upstream server / helpers |
+| `shaders/` | GLSL | Original C-client shaders (Rust client uses WGSL in `rust/**/shaders`) |
+
+So: the **game** is Rust; the **C/Python is upstream + the parity oracle**, not the product. `deps/**` is marked `linguist-vendored` in `.gitattributes`.
+
+## Workspace layout (Rust product)
 
 | Crate | Role |
 |---|---|
@@ -104,9 +119,9 @@ Deterministic `islo` snapshots used during the rewrite: `craft-base-v1` … `cra
 | | |
 |---|---|
 | **Cap** | **$120.00** |
-| **Spent** | **$111.25** (93%) |
-| **Remaining** | **$8.75** |
-| **Tokens** | ~3.11M (token-primary; `usd_per_1k_tokens = $0.02`) |
+| **Spent** | **$112.95** (94%) |
+| **Remaining** | **$7.05** |
+| **Tokens** | ~3.20M (token-primary; `usd_per_1k_tokens = $0.02`) |
 | **Gates** | islo / GH Actions deterministic runs = **$0** agent tokens |
 
 Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · trace: [`rust/COST_TRACE.md`](rust/COST_TRACE.md).
@@ -135,7 +150,8 @@ Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · t
 | GitHub Pages invoice + explanations | 2.50 |
 | SW factory lessons (islo + Incredibuild) | 1.50 |
 | islo snapshots + GH gates | 0.00 |
-| **Total** | **111.25** |
+| YC / Show HN post + repo-composition honesty pass | 1.70 |
+| **Total** | **112.95** |
 
 ## Execution DAG (cleared)
 

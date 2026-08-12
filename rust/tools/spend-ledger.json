@@ -368,7 +368,7 @@
         "out": 0,
         "total": 75000
       },
-      "notes": "README price tag ($105.75/$120) + wave table + mermaid DAG (A→N) on master"
+      "notes": "README price tag ($105.75/$120) + wave table + mermaid DAG (A\u2192N) on master"
     },
     {
       "id": "pages-invoice-31",
@@ -396,7 +396,7 @@
         "out": 0,
         "total": 75000
       },
-      "notes": "Pages+README: SW factory section — islo.dev + incredibuild.com links; what worked / less worked"
+      "notes": "Pages+README: SW factory section \u2014 islo.dev + incredibuild.com links; what worked / less worked"
     },
     {
       "id": "yc-post-33",
@@ -411,10 +411,24 @@
         "total": 40000
       },
       "notes": "docs/YC_POST.md Launch YC / Show HN copy + short social; linked from Pages/README"
+    },
+    {
+      "id": "Q_yc_post-34",
+      "ts": "2026-08-12T09:03:25Z",
+      "job": "Q_yc_post",
+      "attempt": 1,
+      "kind": "agent",
+      "est_usd": 0.9,
+      "agent_tokens": {
+        "in": 45000,
+        "out": 0,
+        "total": 45000
+      },
+      "notes": "Concise YC/Show HN post + repo-composition honesty pass (README, DEMO.md, Pages hero, .gitattributes)"
     }
   ],
-  "cumulative_est_usd": 112.05,
-  "remaining_usd": 7.95,
+  "cumulative_est_usd": 112.95,
+  "remaining_usd": 7.05,
   "next_allocation": [
     {
       "wave": "pages-redeploy",
@@ -440,5 +454,5 @@
     "note": "PRODUCT finish + SW factory writeup (islo.dev / Incredibuild links, worked/less) at zozo123.github.io/Craft"
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 3150000
+  "cumulative_tokens": 3195000
 }
