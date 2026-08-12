@@ -4,7 +4,9 @@ Minecraft-style voxel game, rewritten end to end in **Rust** — `winit` + `wgpu
 
 Fork: [zozo123/Craft](https://github.com/zozo123/Craft) · Upstream: [fogleman/Craft](https://github.com/fogleman/Craft)
 
-**Price tag: $107.25 / $120 spent** · ~2.91M tokens · [$12.75 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
+**Pages (invoice + demo):** [zozo123.github.io/Craft](https://zozo123.github.io/Craft/)
+
+**Price tag: $109.75 / $120 spent** · ~3.04M tokens · [$10.25 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
 
 ![Craft (Rust) networked demo](docs/demo.gif)
 
@@ -100,9 +102,9 @@ Deterministic `islo` snapshots used during the rewrite: `craft-base-v1` … `cra
 | | |
 |---|---|
 | **Cap** | **$120.00** |
-| **Spent** | **$107.25** (89%) |
-| **Remaining** | **$12.75** |
-| **Tokens** | ~2.91M (token-primary; `usd_per_1k_tokens = $0.02`) |
+| **Spent** | **$109.75** (91%) |
+| **Remaining** | **$10.25** |
+| **Tokens** | ~3.04M (token-primary; `usd_per_1k_tokens = $0.02`) |
 | **Gates** | islo / GH Actions deterministic runs = **$0** agent tokens |
 
 Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · trace: [`rust/COST_TRACE.md`](rust/COST_TRACE.md).
@@ -128,8 +130,9 @@ Live ledger: [`rust/tools/spend-ledger.json`](rust/tools/spend-ledger.json) · t
 | PR#1 open / verify / merge | 1.50 |
 | Rust-first README finish | 3.00 |
 | README price tag + DAG | 1.50 |
+| GitHub Pages invoice + explanations | 2.50 |
 | islo snapshots + GH gates | 0.00 |
-| **Total** | **107.25** |
+| **Total** | **109.75** |
 
 ## Execution DAG (cleared)
 
@@ -155,6 +158,7 @@ flowchart TD
   K --> L[L_craft_full_v2]
   L --> M[M_demo_lavapipe]
   M --> N[N_README_price_DAG]
+  N --> P[P_pages_invoice]
 ```
 
 | Node | What cleared it |
@@ -168,7 +172,8 @@ flowchart TD
 | F / K | HUD, daylight, hotbar, peer markers, `--connect` |
 | L | islo mp-e2e → snapshot `craft-full-v2` |
 | M | headless `--demo` on lavapipe → `docs/demo.{mp4,gif}` |
-| N | Rust-first README + this price tag + DAG on `master` |
+| N | Rust-first README + price tag + DAG on `master` |
+| P | GitHub Pages invoice · budget · sandboxes · credits |
 
 Full board: [`rust/EXECUTION.md`](rust/EXECUTION.md).
 

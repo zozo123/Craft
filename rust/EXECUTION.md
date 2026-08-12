@@ -22,6 +22,7 @@ flowchart TD
   K --> L[L_craft_full_v2]
   L --> M[M_demo_lavapipe]
   M --> N[N_README_price_DAG]
+  N --> P[P_pages_invoice]
 ```
 
 ## Cleared
@@ -36,6 +37,7 @@ flowchart TD
 | Demo + CI | `--demo` + lavapipe artifact + PR#1 merged |
 | README finish | Rust-first README + docs demo on `master` |
 | Price + DAG on README | price tag + mermaid flow on `master` |
+| Pages invoice | `https://zozo123.github.io/Craft/` budget/DAG/sandboxes/credits |
 
 ## Run
 
