@@ -4,7 +4,7 @@ Minecraft-style voxel game, rewritten end to end in **Rust** — `winit` + `wgpu
 
 Fork: [zozo123/Craft](https://github.com/zozo123/Craft) · Upstream: [fogleman/Craft](https://github.com/fogleman/Craft)
 
-**Pages (invoice + demo + factory lessons):** [zozo123.github.io/Craft](https://zozo123.github.io/Craft/)
+**Pages (invoice + demo + factory lessons):** [zozo123.github.io/Craft](https://zozo123.github.io/Craft/) · **YC / Show HN post:** [`docs/YC_POST.md`](docs/YC_POST.md)
 
 **Price tag: $111.25 / $120 spent** · ~3.11M tokens · [$8.75 reserve](#price-tag) · [execution DAG](#execution-dag-cleared)
 

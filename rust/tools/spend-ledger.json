@@ -397,10 +397,24 @@
         "total": 75000
       },
       "notes": "Pages+README: SW factory section — islo.dev + incredibuild.com links; what worked / less worked"
+    },
+    {
+      "id": "yc-post-33",
+      "ts": "2026-08-12T08:25:00Z",
+      "job": "yc-post",
+      "attempt": 1,
+      "kind": "cursor_write",
+      "est_usd": 0.8,
+      "agent_tokens": {
+        "in": 40000,
+        "out": 0,
+        "total": 40000
+      },
+      "notes": "docs/YC_POST.md Launch YC / Show HN copy + short social; linked from Pages/README"
     }
   ],
-  "cumulative_est_usd": 111.25,
-  "remaining_usd": 8.75,
+  "cumulative_est_usd": 112.05,
+  "remaining_usd": 7.95,
   "next_allocation": [
     {
       "wave": "pages-redeploy",
@@ -411,7 +425,7 @@
     {
       "wave": "reserve",
       "job": "retries only",
-      "est_usd": 8.75,
+      "est_usd": 7.95,
       "est_tokens": 0
     }
   ],
@@ -422,9 +436,9 @@
   "finish_line": {
     "target": "Pages factory lessons + craft-full-v2 on zozo123/Craft master",
     "cap_usd": 120,
-    "prior_spent_usd": 111.25,
+    "prior_spent_usd": 112.05,
     "note": "PRODUCT finish + SW factory writeup (islo.dev / Incredibuild links, worked/less) at zozo123.github.io/Craft"
   },
   "cost_model": "token_primary",
-  "cumulative_tokens": 3110000
+  "cumulative_tokens": 3150000
 }
